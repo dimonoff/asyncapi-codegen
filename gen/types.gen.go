@@ -69,10 +69,10 @@ func (e *Error) Error() string {
 
 // ScheduleEventsChannelParameters represents ScheduleEventsChannel channel parameters
 type ScheduleEventsChannelParameters struct {
-	// ProjectId is a channel parameter: Project identifier
-	ProjectId string
-	// RegionId is a channel parameter: Region identifier
-	RegionId string
+	// ProjectID is a channel parameter: Project identifier
+	ProjectID string
+	// RegionID is a channel parameter: Region identifier
+	RegionID string
 }
 
 const (

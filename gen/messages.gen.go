@@ -15,7 +15,7 @@ type DeviceGroupScheduleAssociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewDeviceGroupScheduleAssociationMessage() DeviceGroupScheduleAssociationMessage {
@@ -87,7 +87,7 @@ type DeviceGroupScheduleDissociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewDeviceGroupScheduleDissociationMessage() DeviceGroupScheduleDissociationMessage {
@@ -159,7 +159,7 @@ type DeviceScheduleAssociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewDeviceScheduleAssociationMessage() DeviceScheduleAssociationMessage {
@@ -231,7 +231,7 @@ type DeviceScheduleDissociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewDeviceScheduleDissociationMessage() DeviceScheduleDissociationMessage {
@@ -303,7 +303,7 @@ type GroupScheduleAssociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewGroupScheduleAssociationMessage() GroupScheduleAssociationMessage {
@@ -375,7 +375,7 @@ type GroupScheduleDissociationMessage struct {
 	Headers KafkaHeadersSchema
 
 	// Payload will be inserted in the message payload
-	Payload ScheduleADEventSchema
+	Payload ScheduleAdEventSchema
 }
 
 func NewGroupScheduleDissociationMessage() GroupScheduleDissociationMessage {

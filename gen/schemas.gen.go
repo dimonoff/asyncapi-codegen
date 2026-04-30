@@ -7,65 +7,65 @@ package gen
 // Description: Data payload for a device-group-schedule association event.
 type DeviceGroupScheduleAssociationDataSchema struct {
 	// Description: Identifier of the device.
-	DeviceId int64 `json:"deviceId"`
+	DeviceID int64 `json:"deviceId"`
 
 	// Description: Identifier of the group/zone.
-	GroupId int64 `json:"groupId"`
+	GroupID int64 `json:"groupId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // DeviceGroupScheduleDissociationDataSchema is a schema from the AsyncAPI specification required in messages
 // Description: Data payload for a device-group-schedule dissociation event.
 type DeviceGroupScheduleDissociationDataSchema struct {
 	// Description: Identifier of the device.
-	DeviceId int64 `json:"deviceId"`
+	DeviceID int64 `json:"deviceId"`
 
 	// Description: Identifier of the group/zone.
-	GroupId int64 `json:"groupId"`
+	GroupID int64 `json:"groupId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // DeviceScheduleAssociationDataSchema is a schema from the AsyncAPI specification required in messages
 // Description: Data payload for a device-schedule association event (direct association, not via group).
 type DeviceScheduleAssociationDataSchema struct {
-	DeviceId int64 `json:"deviceId"`
+	DeviceID int64 `json:"deviceId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // DeviceScheduleDissociationDataSchema is a schema from the AsyncAPI specification required in messages
 // Description: Data payload for a device-schedule dissociation event (direct dissociation, not via group).
 type DeviceScheduleDissociationDataSchema struct {
 	// Description: Identifier of the device.
-	DeviceId int64 `json:"deviceId"`
+	DeviceID int64 `json:"deviceId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // GroupScheduleAssociationDataSchema is a schema from the AsyncAPI specification required in messages
 // Description: Data payload for a group-schedule association event.
 type GroupScheduleAssociationDataSchema struct {
 	// Description: Identifier of the group/zone.
-	GroupId int64 `json:"groupId"`
+	GroupID int64 `json:"groupId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // GroupScheduleDissociationDataSchema is a schema from the AsyncAPI specification required in messages
 // Description: Data payload for a group-schedule dissociation event.
 type GroupScheduleDissociationDataSchema struct {
 	// Description: Identifier of the group/zone.
-	GroupId int64 `json:"groupId"`
+	GroupID int64 `json:"groupId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // KafkaHeadersSchema is a schema from the AsyncAPI specification required in messages
@@ -85,11 +85,11 @@ type KafkaHeadersSchema struct {
 // Description: Enum of possible producer services.
 type ProducerTypeSchema string
 
-// ScheduleADEventSchema is a schema from the AsyncAPI specification required in messages
+// ScheduleAdEventSchema is a schema from the AsyncAPI specification required in messages
 // Description: Common base structure for all association/dissociation events (group-schedule and device-group-schedule).
-type ScheduleADEventSchema struct {
+type ScheduleAdEventSchema struct {
 	// Description: Event-specific data payload, structure depends on the eventType.
-	Data *DataPropertyFromScheduleADEventSchema `json:"data,omitempty"`
+	Data *DataPropertyFromScheduleAdEventSchema `json:"data,omitempty"`
 
 	// Description: Unique event identifier.
 	EventID int64 `json:"eventID"`
@@ -107,17 +107,17 @@ type ScheduleADEventSchema struct {
 	Timestamp int64 `json:"timestamp"`
 }
 
-// DataPropertyFromScheduleADEventSchema is a schema from the AsyncAPI specification required in messages
+// DataPropertyFromScheduleAdEventSchema is a schema from the AsyncAPI specification required in messages
 // Description: Event-specific data payload, structure depends on the eventType.
-type DataPropertyFromScheduleADEventSchema struct {
+type DataPropertyFromScheduleAdEventSchema struct {
 	// Description: Identifier of the device.
-	DeviceId int64 `json:"deviceId"`
+	DeviceID int64 `json:"deviceId"`
 
 	// Description: Identifier of the group/zone.
-	GroupId int64 `json:"groupId"`
+	GroupID int64 `json:"groupId"`
 
 	// Description: Identifier of the schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 }
 
 // ScheduleEventTypeSchema is a schema from the AsyncAPI specification required in messages
@@ -140,7 +140,7 @@ type SchedulePublishedEventSchema struct {
 	Producer ProducerTypeSchema `json:"producer" validate:"oneof='SCMS_API_GATEWAY' 'SCHEDULER_SERVICE' 'OTHER_SERVICE'"`
 
 	// Description: Identifier of the published schedule.
-	ScheduleId int64 `json:"scheduleId"`
+	ScheduleID int64 `json:"scheduleId"`
 
 	// Description: Name of the published schedule.
 	ScheduleName string `json:"scheduleName"`
