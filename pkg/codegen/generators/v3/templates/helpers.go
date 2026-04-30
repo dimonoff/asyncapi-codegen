@@ -66,6 +66,19 @@ func ReferenceToStructAttributePath(ref string) string {
 	return strings.Join(path, ".")
 }
 
+// fullyFollowMessage walks the Message reference chain until it reaches the
+// terminal (typically a `components.messages.*`) message. The standard
+// `Follow()` only resolves a single hop, which is insufficient when an
+// operation references a channel-scoped message that itself `$ref`s a
+// component message — that chain must be flattened to obtain the real Go
+// type name that is emitted into the generated source.
+func fullyFollowMessage(msg *asyncapi.Message) *asyncapi.Message {
+	for msg != nil && msg.ReferenceTo != nil {
+		msg = msg.ReferenceTo
+	}
+	return msg
+}
+
 // ChannelToMessageTypeName will convert a channel to a message type name in the
 // form of golang conventional type names.
 func ChannelToMessageTypeName(ch asyncapi.Channel) string {
@@ -73,7 +86,7 @@ func ChannelToMessageTypeName(ch asyncapi.Channel) string {
 	if err != nil {
 		panic(err)
 	}
-	return templateutil.Namify(msg.Follow().Name)
+	return templateutil.Namify(fullyFollowMessage(msg).Name)
 }
 
 // OpToMsgTypeName will convert an operation to a message type name in the
@@ -83,7 +96,7 @@ func OpToMsgTypeName(op asyncapi.Operation) string {
 	if err != nil {
 		panic(err)
 	}
-	return templateutil.Namify(msg.Follow().Name)
+	return templateutil.Namify(fullyFollowMessage(msg).Name)
 }
 
 // OpToChannelTypeName will convert an operation to a channel type name in the

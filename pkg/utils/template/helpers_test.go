@@ -67,3 +67,20 @@ func (suite *HelpersSuite) TestNamifyWithoutParams() {
 		suite.Require().Equal(c.Out, NamifyWithoutParams(c.In), i)
 	}
 }
+
+func (suite *HelpersSuite) TestCamelCaseWithInitialisms() {
+	SetKnownAcronyms([]string{"ID", "API", "URL", "OAuth", "OIDC"})
+	suite.Require().NoError(SetConvertKeyFn("camel"))
+	suite.Require().NoError(SetNamifyFn("camel"))
+	suite.T().Cleanup(func() {
+		SetKnownAcronyms(nil)
+		suite.Require().NoError(SetConvertKeyFn("none"))
+		suite.Require().NoError(SetNamifyFn("none"))
+	})
+
+	suite.Require().Equal("UserID", ConvertKey("user_id"))
+	suite.Require().Equal("APIURL", ConvertKey("api_url"))
+	suite.Require().Equal("OAuthToken", Namify("oauth_token"))
+	suite.Require().Equal("OIDCConfigURL", Namify("oidc_config_url"))
+}
+

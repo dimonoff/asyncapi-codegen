@@ -214,10 +214,24 @@ func (msg *Message) generateHeadersMetadata() error {
 		return nil
 	}
 
-	if err := msg.Headers.generateMetadata(msg.Name, "Headers", nil, false); err != nil {
+	// NOTE: type validation is deferred to setHeadersDependencies, after the
+	// $ref pointer (if any) has been resolved into ReferenceTo. Validating
+	// here would fail for headers declared as `$ref` because Follow() cannot
+	// resolve the reference yet.
+	return msg.Headers.generateMetadata(msg.Name, "Headers", nil, false)
+}
+
+func (msg *Message) setHeadersDependencies(spec Specification) error {
+	if msg.Headers == nil {
+		return nil
+	}
+
+	if err := msg.Headers.setDependencies(spec); err != nil {
 		return err
 	}
 
+	// Validate after $ref resolution so that headers using `$ref` are
+	// dereferenced to their target schema before the type check.
 	if msg.Headers.Follow().Type != SchemaTypeIsObject.String() {
 		return fmt.Errorf(
 			"%w: %q headers must be an object, is %q",
@@ -227,13 +241,6 @@ func (msg *Message) generateHeadersMetadata() error {
 	return nil
 }
 
-func (msg *Message) setHeadersDependencies(spec Specification) error {
-	if msg.Headers == nil {
-		return nil
-	}
-
-	return msg.Headers.setDependencies(spec)
-}
 
 func (msg *Message) generateOneOfMetadata() error {
 	for i, v := range msg.OneOf {

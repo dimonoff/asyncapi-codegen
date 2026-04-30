@@ -15,6 +15,9 @@ const (
 
 	importsTemplatePath          = templatesDir + "/imports.tmpl"
 	typesTemplatePath            = templatesDir + "/types.tmpl"
+	typesCoreTemplatePath        = templatesDir + "/types_core.tmpl"
+	typesMessagesTemplatePath    = templatesDir + "/types_messages.tmpl"
+	typesSchemasTemplatePath     = templatesDir + "/types_schemas.tmpl"
 	schemaDefinitionTemplatePath = templatesDir + "/schema_definition.tmpl"
 	schemaNameTemplatePath       = templatesDir + "/schema_name.tmpl"
 	messageTemplatePath          = templatesDir + "/message.tmpl"

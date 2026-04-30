@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dimonoff/asyncapi-codegen/pkg/codegen"
+	tpl "github.com/dimonoff/asyncapi-codegen/pkg/utils/template"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +20,12 @@ Just plug your application to your favorite message broker!
 More info on README: https://github.com/dimonoff/asyncapi-codegen
 `,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		if flags.Acronyms {
+			DefaultAcronymRegistry().Configure()
+		} else {
+			tpl.SetKnownAcronyms(nil)
+		}
+
 		cg, err := codegen.FromFile(flags.InputPaths[0], flags.InputPaths[1:]...)
 		if err != nil {
 			return err

@@ -1,0 +1,12 @@
+{{range $key, $value := .Channels -}}
+{{- range $key, $value := $value.Messages}}
+{{template "message" $value}}
+{{end -}}
+{{- end}}
+
+{{/* NOTE: No need to generate messages from operation as they are only references */}}
+
+{{- range $key, $value := .Components.Messages}}
+{{template "message" $value}}
+{{end -}}
+

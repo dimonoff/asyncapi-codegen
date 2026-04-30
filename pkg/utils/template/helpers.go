@@ -13,20 +13,121 @@ import (
 
 type namingSchemeFn func(string) string
 
+var knownAcronyms = map[string]string{}
+
 var convertKeyFuncs = map[string]namingSchemeFn{
 	"snake": strcase.ToSnake,
 	"kebab": strcase.ToKebab,
-	"camel": strcase.ToCamel,
+	"camel": CamelCaseWithInitialisms,
 	"none":  func(s string) string { return s },
 }
 
 var namifyPerScheme = map[string]namingSchemeFn{
-	"camel": strcase.ToCamel,
+	"camel": CamelCaseWithInitialisms,
 	"none":  DefaultNamifier,
 }
 
 var convertKey = convertKeyFuncs["none"]
 var namify = namifyPerScheme["none"]
+
+// SetKnownAcronyms configures the list of acronyms/initialisms that should be
+// preserved when generating CamelCase identifiers.
+func SetKnownAcronyms(acronyms []string) {
+	knownAcronyms = make(map[string]string, len(acronyms))
+	for _, acronym := range acronyms {
+		acronym = strings.TrimSpace(acronym)
+		if acronym == "" {
+			continue
+		}
+		knownAcronyms[strings.ToLower(acronym)] = acronym
+	}
+}
+
+// CamelCaseWithInitialisms converts a string to CamelCase while preserving any
+// configured acronyms/initialisms as-is.
+func CamelCaseWithInitialisms(sentence string) string {
+	if len(knownAcronyms) == 0 {
+		return strcase.ToCamel(sentence)
+	}
+
+	words := splitIdentifierWords(sentence)
+	if len(words) == 0 {
+		return ""
+	}
+
+	var out strings.Builder
+	for _, word := range words {
+		if acronym, ok := knownAcronyms[strings.ToLower(word)]; ok {
+			out.WriteString(acronym)
+			continue
+		}
+
+		out.WriteString(strcase.ToCamel(strings.ToLower(word)))
+	}
+
+	return out.String()
+}
+
+func splitIdentifierWords(sentence string) []string {
+	runes := []rune(strings.TrimSpace(sentence))
+	if len(runes) == 0 {
+		return nil
+	}
+
+	words := make([]string, 0)
+	current := make([]rune, 0, len(runes))
+	flush := func() {
+		if len(current) == 0 {
+			return
+		}
+		words = append(words, string(current))
+		current = current[:0]
+	}
+
+	for i, r := range runes {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			flush()
+			continue
+		}
+
+		if len(current) > 0 {
+			prev := current[len(current)-1]
+			var next rune
+			hasNext := false
+			for j := i + 1; j < len(runes); j++ {
+				if unicode.IsLetter(runes[j]) || unicode.IsDigit(runes[j]) {
+					next = runes[j]
+					hasNext = true
+					break
+				}
+				if !unicode.IsLetter(runes[j]) && !unicode.IsDigit(runes[j]) {
+					break
+				}
+			}
+
+			if shouldSplitIdentifier(prev, r, next, hasNext) {
+				flush()
+			}
+		}
+
+		current = append(current, r)
+	}
+
+	flush()
+	return words
+}
+
+func shouldSplitIdentifier(prev, current, next rune, hasNext bool) bool {
+	if unicode.IsDigit(prev) && unicode.IsLetter(current) {
+		return true
+	}
+
+	if unicode.IsLower(prev) && unicode.IsUpper(current) {
+		return true
+	}
+
+	return unicode.IsUpper(prev) && unicode.IsUpper(current) && hasNext && unicode.IsLower(next)
+}
 
 // NamifyWithoutParams will convert a sentence to a golang conventional type name.
 // and will remove all parameters that can appear between '{' and '}'.

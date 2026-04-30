@@ -1,5 +1,6 @@
 # Binaries for programs and plugins
 *.exe
+asyncapi-codegen
 *.exe~
 *.dll
 *.so
@@ -21,3 +22,4 @@ __debug_bin
 # IDEs
 .idea
 *.iml
+/gen/

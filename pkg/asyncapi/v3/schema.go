@@ -1,6 +1,9 @@
 package asyncapiv3
 
 import (
+	"bytes"
+	"encoding/json"
+
 	"github.com/dimonoff/asyncapi-codegen/pkg/asyncapi"
 	"github.com/dimonoff/asyncapi-codegen/pkg/utils"
 )
@@ -474,4 +477,50 @@ func (s *Schema) Follow() *Schema {
 		return s.ReferenceTo
 	}
 	return s
+}
+
+// UnmarshalJSON implements custom unmarshalling so that fields like
+// `additionalProperties` (which JSON Schema allows to be either a boolean or
+// a schema object) are tolerated. A boolean value is normalised:
+//   - `true`  -> empty schema (allows any additional properties)
+//   - `false` -> nil          (no additional properties allowed)
+func (s *Schema) UnmarshalJSON(data []byte) error {
+	// Use an alias to avoid recursion.
+	type rawSchema Schema
+
+	// Pre-process: strip boolean `additionalProperties` so the standard
+	// unmarshaller does not fail on it.
+	var probe map[string]json.RawMessage
+	if err := json.Unmarshal(data, &probe); err == nil {
+		if raw, ok := probe["additionalProperties"]; ok {
+			trimmed := bytes.TrimSpace(raw)
+			if bytes.Equal(trimmed, []byte("true")) || bytes.Equal(trimmed, []byte("false")) {
+				delete(probe, "additionalProperties")
+				rebuilt, err := json.Marshal(probe)
+				if err != nil {
+					return err
+				}
+				data = rebuilt
+
+				// If true, expose a permissive empty schema afterwards.
+				var aux rawSchema
+				if err := json.Unmarshal(data, &aux); err != nil {
+					return err
+				}
+				*s = Schema(aux)
+				if bytes.Equal(trimmed, []byte("true")) {
+					empty := NewSchema()
+					s.AdditionalProperties = &empty
+				}
+				return nil
+			}
+		}
+	}
+
+	var aux rawSchema
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*s = Schema(aux)
+	return nil
 }

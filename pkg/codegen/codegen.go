@@ -3,7 +3,10 @@ package codegen
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime/debug"
+	"sort"
+	"strings"
 
 	"github.com/dimonoff/asyncapi-codegen/pkg/asyncapi"
 	"github.com/dimonoff/asyncapi-codegen/pkg/asyncapi/parser"
@@ -81,6 +84,17 @@ func modulePathVersion() (path, version string) {
 
 // Generate generates code from the code generation structure, that have already
 // processed the AsyncAPI file when creating it.
+//
+// Output behaviour
+//
+//   - If `opt.OutputPath` ends in `.go`, the generator runs in legacy
+//     single-file mode: every enabled `--generate` category is concatenated
+//     into one Go file written verbatim at that path.
+//   - Otherwise `opt.OutputPath` is treated as a directory (created if it
+//     does not exist) and the generator emits one file per category:
+//     `types.gen.go`, `app.gen.go`, `user.gen.go`. Each file gets its own
+//     package/import header and is formatted independently with goimports,
+//     so unused imports are pruned per file.
 func (cg CodeGen) Generate(opt options.Options) error {
 	if err := template.SetConvertKeyFn(opt.ConvertKeys); err != nil {
 		return err
@@ -103,30 +117,120 @@ func (cg CodeGen) Generate(opt options.Options) error {
 		return err
 	}
 
-	// Generate content
+	// Single-file legacy mode (kept so existing `//go:generate` directives
+	// targeting `*.gen.go` continue to work unchanged).
+	if strings.HasSuffix(opt.OutputPath, ".go") {
+		return cg.generateSingleFile(opt)
+	}
+
+	return cg.generateMultiFile(opt)
+}
+
+func (cg CodeGen) generateSingleFile(opt options.Options) error {
 	content, err := cg.generateContent(opt)
 	if err != nil {
 		return err
 	}
 
-	// Format content if not disabled
-	var fileContent []byte
-	if !opt.DisableFormatting {
-		fileContent, err = imports.Process("", []byte(content), &imports.Options{
-			TabWidth:  8,
-			TabIndent: true,
-			Comments:  true,
-			Fragment:  true,
-		})
-		if err != nil {
-			return err
-		}
-	} else {
-		fileContent = []byte(content)
+	fileContent, err := formatGoSource(content, opt.DisableFormatting)
+	if err != nil {
+		return err
 	}
 
-	// Write to file
-	return os.WriteFile(opt.OutputPath, fileContent, 0644)
+	return os.WriteFile(opt.OutputPath, fileContent, 0o644)
+}
+
+func (cg CodeGen) generateMultiFile(opt options.Options) error {
+	// Ensure the output directory exists.
+	if err := os.MkdirAll(opt.OutputPath, 0o755); err != nil {
+		return fmt.Errorf("create output directory %q: %w", opt.OutputPath, err)
+	}
+
+	header, parts, err := cg.generateParts(opt)
+	if err != nil {
+		return err
+	}
+
+	// Sort keys to make the output order deterministic.
+	names := make([]string, 0, len(parts))
+	for name := range parts {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		body := parts[name]
+		if strings.TrimSpace(body) == "" {
+			continue
+		}
+
+		fileContent, err := formatGoSource(header+body, opt.DisableFormatting)
+		if err != nil {
+			return fmt.Errorf("format %s: %w", name, err)
+		}
+
+		dst := filepath.Join(opt.OutputPath, name+".gen.go")
+		if err := os.WriteFile(dst, fileContent, 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", dst, err)
+		}
+	}
+
+	return nil
+}
+
+func formatGoSource(content string, disableFormatting bool) ([]byte, error) {
+	if disableFormatting {
+		return []byte(content), nil
+	}
+	return imports.Process("", []byte(content), &imports.Options{
+		TabWidth:  8,
+		TabIndent: true,
+		Comments:  true,
+		Fragment:  true,
+	})
+}
+
+// generateParts returns the package/imports header (shared by every file) and
+// a map of category-name → body for the per-file output mode.
+func (cg CodeGen) generateParts(opt options.Options) (header string, parts map[string]string, err error) {
+	switch v := cg.Specification.MajorVersion(); v {
+	case 2:
+		spec, err := asyncapiv2.FromUnknownVersion(cg.Specification)
+		if err != nil {
+			return "", nil, err
+		}
+		gen := generatorv2.Generator{
+			Specification: *spec,
+			Options:       opt,
+			ModulePath:    cg.modulePath,
+			ModuleVersion: cg.moduleVersion,
+		}
+		header, err = gen.GenerateImports()
+		if err != nil {
+			return "", nil, err
+		}
+		parts, err = gen.GenerateParts()
+		return header, parts, err
+	case 3:
+		spec, err := asyncapiv3.FromUnknownVersion(cg.Specification)
+		if err != nil {
+			return "", nil, err
+		}
+		gen := generatorv3.Generator{
+			Specification: *spec,
+			Options:       opt,
+			ModulePath:    cg.modulePath,
+			ModuleVersion: cg.moduleVersion,
+		}
+		header, err = gen.GenerateImports()
+		if err != nil {
+			return "", nil, err
+		}
+		parts, err = gen.GenerateParts()
+		return header, parts, err
+	default:
+		return "", nil, fmt.Errorf("unsupported major version (%q)", v)
+	}
 }
 
 func (cg CodeGen) generateContent(opt options.Options) (string, error) {
