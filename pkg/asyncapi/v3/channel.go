@@ -2,6 +2,7 @@ package asyncapiv3
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
@@ -153,9 +154,27 @@ func (ch *Channel) Follow() *Channel {
 }
 
 // GetMessage will return the channel message.
+//
+// When a channel exposes multiple messages, this function intentionally
+// returns the message bound to the alphabetically-first key. The previous
+// implementation simply ranged over the underlying `map[string]*Message`
+// and returned the first hit, which Go randomises on every iteration —
+// causing the code generator to emit mismatched message types across the
+// helpers of a single operation (subscriber callback, listener, broker
+// converter, unsubscribe doc-comment, etc.) and producing code that does
+// not compile.
 func (ch Channel) GetMessage() (*Message, error) {
-	for _, m := range ch.Follow().Messages {
-		return m.Follow(), nil // TODO: change
+	msgs := ch.Follow().Messages
+	if len(msgs) == 0 {
+		return nil, fmt.Errorf("%w: channel %q", ErrNoMessageInChannel, ch.Name)
 	}
-	return nil, fmt.Errorf("%w: channel %q", ErrNoMessageInChannel, ch.Name)
+
+	keys := make([]string, 0, len(msgs))
+	for k := range msgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return msgs[keys[0]].Follow(), nil // TODO: support exposing all messages
 }
+
