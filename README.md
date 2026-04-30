@@ -3,13 +3,14 @@
 An AsyncAPI Golang Code generator that generates all Go code from the broker
 to the application/user. Just plug your application to your favorite message broker!
 
+This project was forked from [original asyncapi-codegen](https://github.com/lerenn/asyncapi-codegen) 
+and adapted to some of our needs. The original project didn't seem maintained, so we decided to fork it and maintain it ourselves. 
+We are open to contributions and support from the community, so please do not hesitate to reach out if you have any questions 
+or suggestions!
+
+
 ![AsyncAPI Codegen Preview](./assets/codegen-preview.svg)
 
-**⚠️ We do our best to progressively satisfy the entire AsyncAPI specification,**
-**but some features may still be missing: please raise an issue on any bug or**
-**missing feature.**
-
-**❤️ Support is greatly appreciated and contributions are welcomed!**
 
 *Inspired from popular [deepmap/oapi-codegen](https://github.com/deepmap/oapi-codegen)*
 

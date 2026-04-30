@@ -49,9 +49,18 @@ func (g Generator) Generate() (string, error) {
 	return content, nil
 }
 
-// PartTypes is the multi-file output key for type definitions
-// (schemas, message structs, channel parameters and channel-path constants).
+// PartTypes is the multi-file output key for "core" type definitions
+// (controller, options, error, channel parameters, channel-path constants).
 const PartTypes = "types"
+
+// PartMessages is the multi-file output key for the message section
+// (channel-scoped message comments + message structs declared under
+// `components.messages`).
+const PartMessages = "messages"
+
+// PartSchemas is the multi-file output key for the schema section
+// (Go types generated from `components.schemas`).
+const PartSchemas = "schemas"
 
 // PartApp is the multi-file output key for application-side code
 // (the App controller and its subscriber interface).
@@ -68,22 +77,45 @@ func (g Generator) GenerateImports() (string, error) {
 	return g.generateImports(g.Options)
 }
 
-// GenerateParts returns the body of each enabled generation category, keyed by
-// PartTypes / PartApp / PartUser. The returned strings DO NOT include the
-// package/import header — callers (e.g. the multi-file writer in
-// pkg/codegen) are expected to prepend the result of GenerateImports.
+// GenerateParts returns the body of each enabled generation category, keyed
+// by PartTypes / PartMessages / PartSchemas / PartApp / PartUser. The
+// returned strings DO NOT include the package/import header — callers (e.g.
+// the multi-file writer in pkg/codegen) are expected to prepend the result
+// of GenerateImports.
 //
-// This is the building block that lets the CLI emit one file per category
-// when `--output` points at a directory.
+// When `--generate types` is enabled, the type output is split into three
+// per-section files instead of being written as one monolithic file:
+//
+//   - PartTypes    → core (controller, options, channel params, paths)
+//   - PartMessages → message structs and broker codecs
+//   - PartSchemas  → schema definitions from components.schemas
+//
+// This keeps the legacy single-file mode unchanged (it still uses the
+// monolithic `Generate()` method) while giving directory-mode users a more
+// navigable layout.
 func (g Generator) GenerateParts() (map[string]string, error) {
 	parts := map[string]string{}
 
 	if g.Options.Generate.Types {
-		body, err := g.generateTypes()
+		tg := TypesGenerator{Specification: g.Specification}
+
+		core, err := tg.GenerateCore()
 		if err != nil {
 			return nil, err
 		}
-		parts[PartTypes] = body
+		parts[PartTypes] = core
+
+		msgs, err := tg.GenerateMessages()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartMessages] = msgs
+
+		schemas, err := tg.GenerateSchemas()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartSchemas] = schemas
 	}
 
 	if g.Options.Generate.Application {

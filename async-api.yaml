@@ -1,0 +1,386 @@
+asyncapi: 3.0.0
+info:
+  title: Schedule Events API
+  version: 1.0.0
+  description: |
+    Asynchronous specification for schedule events. 
+    Currently, emitted by the scms-api-gateway and consumed by the scheduler-service.
+
+    ## Covered use cases
+    1. Publish a schedule
+    2. Associate an active schedule with a group/zone
+    3. Dissociate a schedule from a group/zone
+    4. Associate a device with a group that has an active schedule
+    5. Dissociate a device from a group/zone that has an active schedule
+    6. Associate a device with a schedule (directly, not via group)
+    7. Dissociate a device from a schedule (directly, not via group)  
+        
+
+    ## Topic format
+    `regions.{regionId}.projects.{projectId}.topics.schedule-published`
+
+    ## Business constraints (not implemented as events)
+    - Deleting a group that has an active schedule is forbidden
+    - Deleting an active schedule is forbidden
+    - A `busy` state on a schedule restricts certain modifications
+
+servers:
+  redpanda-local:
+    host: redpanda:9092
+    protocol: kafka
+    description: Local Redpanda broker (development)
+
+defaultContentType: application/json
+
+channels:
+  scheduleEvents:
+    address: regions.{regionId}.projects.{projectId}.topics.schedule-published
+    description: |
+      Single channel for all schedule mutation events.
+      The `eventType` field in the message discriminates the use case.
+    parameters:
+      regionId:
+        description: Region identifier
+      projectId:
+        description: Project identifier
+    messages:
+      schedulePublished:
+        $ref: '#/components/messages/SchedulePublished'
+      groupAssociated:
+        $ref: '#/components/messages/GroupScheduleAssociation'
+      groupDissociated:
+        $ref: '#/components/messages/GroupScheduleDissociation'
+      deviceAssociated:
+        $ref: '#/components/messages/DeviceGroupScheduleAssociation'
+      deviceDissociated:
+        $ref: '#/components/messages/DeviceGroupScheduleDissociation'
+      deviceDirectlyAssociated:
+        $ref: '#/components/messages/DeviceScheduleAssociation'
+      deviceDirectlyDissociated:
+        $ref: '#/components/messages/DeviceScheduleDissociation'
+
+operations:
+  publishScheduleEvent:
+    action: send
+    channel:
+      $ref: '#/channels/scheduleEvents'
+    summary: Emit a schedule event
+    description: |
+      The scms-api-gateway produces events on this channel.
+      The scheduler-service consumes them and applies the corresponding actions.
+    messages:
+      - $ref: '#/channels/scheduleEvents/messages/schedulePublished'
+      - $ref: '#/channels/scheduleEvents/messages/groupAssociated'
+      - $ref: '#/channels/scheduleEvents/messages/groupDissociated'
+      - $ref: '#/channels/scheduleEvents/messages/deviceAssociated'
+      - $ref: '#/channels/scheduleEvents/messages/deviceDissociated'
+
+  consumeScheduleEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/scheduleEvents'
+    summary: Consume schedule events (scheduler-service)
+    description: |
+      The scheduler-service subscribes to this channel to receive schedule mutations
+      and trigger actions on devices.
+
+components:
+  messages:
+    SchedulePublished:
+      name: schedule.published
+      title: Publish a schedule
+      summary: Emit an event to publish a schedule.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/SchedulePublishedEvent'
+
+    GroupScheduleAssociation:
+      name: schedule.group.association
+      title: Group associated with an active schedule
+      summary: Emit an event that notify listeners that a schedule has been associated with a group/zone.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/ScheduleADEvent'
+
+    GroupScheduleDissociation:
+      name: schedule.group.dissociation
+      title: Group dissociated from a schedule
+      summary: Emit an event that notify listeners that a schedule has been dissociated from a group/zone.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/ScheduleADEvent'
+
+    DeviceGroupScheduleAssociation:
+      name: schedule.device.group.association
+      title: Device associated with a group that has an active schedule
+      summary: Emit an event that notify listeners that a device has been associated with a group/zone that has an active schedule.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/ScheduleADEvent'
+
+    DeviceGroupScheduleDissociation:
+      name: schedule.device.group.dissociation
+      title: Device dissociated from a group that has an active schedule
+      summary: Emit an event that notify listeners that a device has been dissociated from a group/zone that has an active schedule.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/ScheduleADEvent'
+    DeviceScheduleAssociation:
+      name: schedule.device.association
+      title: Device directly associated with a schedule
+      summary: Emit an event that notify listeners that a device has been directly associated with a schedule
+      headers:
+            $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+            $ref: '#/components/schemas/ScheduleADEvent'
+
+    DeviceScheduleDissociation:
+      name: schedule.device.dissociation
+      title: Device directly dissociated from a schedule
+      summary: Emit an event that notify listeners that a device has been directly dissociated from a schedule
+      headers:
+              $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+              $ref: '#/components/schemas/ScheduleADEvent'
+
+  schemas:
+
+    # ── Kafka Headers ────────────────────────────────
+    KafkaHeaders:
+      type: object
+      additionalProperties: false
+      description: Kafka headers included in every produced message.
+      required:
+        - sender
+        - version
+        - event_type
+      properties:
+        sender:
+          type: string
+          description: Name of the producing service.
+        version:
+          type: string
+          description: Message format version.
+        event_type:
+          type: string
+          description: Event type discriminator (used by the consumer for routing).
+          enum:
+            - create_schedule_published_event
+            - schedule_group_associated
+            - schedule_group_dissociated
+            - schedule_device_associated
+            - schedule_device_dissociated
+
+    # ── Event ───────────────────────────────────
+
+    SchedulePublishedEvent:
+      type: object
+      additionalProperties: false
+      description: Data payload for a schedule published event.
+      required:
+        - eventID
+        - eventType
+        - timestamp
+        - eventVersion
+        - producer
+        - scheduleId
+        - scheduleName
+      properties:
+        eventID:
+          type: integer
+          format: int64
+          description: Unique event identifier.
+        eventType:
+          $ref: '#/components/schemas/ScheduleEventType'
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp of the event.
+        eventVersion:
+          type: string
+          description: Event schema version.
+        producer:
+          $ref: '#/components/schemas/ProducerType'
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the published schedule.
+        scheduleName:
+          type: string
+          description: Name of the published schedule.
+
+    ScheduleADEvent:
+      type: object
+      additionalProperties: false
+      description: |
+        Common base structure for all association/dissociation events (group-schedule and device-group-schedule).
+      required:
+        - eventID
+        - eventType
+        - timestamp
+        - eventVersion
+        - producer
+      properties:
+        eventID:
+          type: integer
+          format: int64
+          description: Unique event identifier.
+        eventType:
+          $ref: '#/components/schemas/ScheduleEventType'
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp of the event.
+        eventVersion:
+          type: string
+          description: Event schema version.
+        producer:
+          $ref: '#/components/schemas/ProducerType'
+        data:
+          type: object
+          description: Event-specific data payload, structure depends on the eventType.
+          oneOf:
+            - $ref: '#/components/schemas/GroupScheduleAssociationData'
+            - $ref: '#/components/schemas/GroupScheduleDissociationData'
+            - $ref: '#/components/schemas/DeviceGroupScheduleAssociationData'
+            - $ref: '#/components/schemas/DeviceGroupScheduleDissociationData'
+            - $ref: '#/components/schemas/DeviceScheduleAssociationData'
+            - $ref: '#/components/schemas/DeviceScheduleDissociationData'
+
+
+    # ── Event Type Enum ──────────────────────────────
+    ScheduleEventType:
+      type: string
+      description: Event type discriminator.
+      enum:
+        - SCHEDULE_PUBLISHED
+        - GROUP_ASSOCIATED
+        - GROUP_DISASSOCIATED
+        - DEVICE_ASSOCIATED
+        - DEVICE_DISASSOCIATED
+
+    # ── Named Data Schemas ───────────────────────────
+
+    GroupScheduleAssociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a group-schedule association event.
+      required:
+        - scheduleId
+        - groupId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        groupId:
+          type: integer
+          format: int64
+          description: Identifier of the group/zone.
+
+    GroupScheduleDissociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a group-schedule dissociation event.
+      required:
+        - scheduleId
+        - groupId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        groupId:
+          type: integer
+          format: int64
+          description: Identifier of the group/zone.
+
+    DeviceGroupScheduleAssociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a device-group-schedule association event.
+      required:
+        - scheduleId
+        - groupId
+        - deviceId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        groupId:
+          type: integer
+          format: int64
+          description: Identifier of the group/zone.
+        deviceId:
+          type: integer
+          format: int64
+          description: Identifier of the device.
+
+
+    DeviceGroupScheduleDissociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a device-group-schedule dissociation event.
+      required:
+        - scheduleId
+        - groupId
+        - deviceId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        groupId:
+          type: integer
+          format: int64
+          description: Identifier of the group/zone.
+        deviceId:
+          type: integer
+          format: int64
+          description: Identifier of the device.
+    DeviceScheduleAssociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a device-schedule association event (direct association, not via group).
+      required:
+        - scheduleId
+        - deviceId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        deviceId:
+          type: integer
+          format: int64
+
+    DeviceScheduleDissociationData:
+      type: object
+      additionalProperties: false
+      description: Data payload for a device-schedule dissociation event (direct dissociation, not via group).
+      required:
+        - scheduleId
+        - deviceId
+      properties:
+        scheduleId:
+          type: integer
+          format: int64
+          description: Identifier of the schedule.
+        deviceId:
+          type: integer
+          format: int64
+          description: Identifier of the device.
+
+    ProducerType:
+      type: string
+      description: Enum of possible producer services.
+      enum:
+        - SCMS_API_GATEWAY
+        - SCHEDULER_SERVICE
+        - OTHER_SERVICE

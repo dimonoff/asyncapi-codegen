@@ -1,0 +1,4 @@
+{{range $key, $value := .Components.Schemas}}
+{{template "schema-definition" $value}}
+{{- end}}
+
