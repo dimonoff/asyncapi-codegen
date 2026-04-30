@@ -49,6 +49,55 @@ func (g Generator) Generate() (string, error) {
 	return content, nil
 }
 
+// PartTypes / PartApp / PartUser are the multi-file output keys (matching the
+// v3 generator) used by the CLI when `--output` points at a directory.
+const (
+	PartTypes = "types"
+	PartApp   = "app"
+	PartUser  = "user"
+)
+
+// GenerateImports renders the standard imports/package header used by every
+// generated file. Each per-category file produced in directory mode is
+// prefixed with this block; `goimports` then prunes unused imports per file.
+func (g Generator) GenerateImports() (string, error) {
+	return g.generateImports(g.Options)
+}
+
+// GenerateParts returns the body of each enabled generation category keyed by
+// PartTypes / PartApp / PartUser. The returned strings do NOT include the
+// package/import header — callers are expected to prepend the result of
+// GenerateImports.
+func (g Generator) GenerateParts() (map[string]string, error) {
+	parts := map[string]string{}
+
+	if g.Options.Generate.Types {
+		body, err := g.generateTypes()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartTypes] = body
+	}
+
+	if g.Options.Generate.Application {
+		body, err := g.generateApp()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartApp] = body
+	}
+
+	if g.Options.Generate.User {
+		body, err := g.generateUser()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartUser] = body
+	}
+
+	return parts, nil
+}
+
 func (g Generator) generateImports(opts options.Options) (string, error) {
 	imps, err := g.Specification.CustomImports()
 	if err != nil {

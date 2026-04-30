@@ -56,7 +56,13 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVarP(
 		&f.InputPaths, "input", "i", []string{"asyncapi.yaml"},
 		"AsyncAPI specification file to use, and its dependencies")
-	cmd.Flags().StringVarP(&f.OutputPath, "output", "o", "asyncapi.gen.go", "Destination file")
+	cmd.Flags().StringVarP(&f.OutputPath, "output", "o", ".",
+		"Destination output path.\n"+
+			"  - If it ends with `.go`, the generator runs in legacy single-file mode\n"+
+			"    and writes everything to that file.\n"+
+			"  - Otherwise it is treated as a directory (created if missing) and the\n"+
+			"    generator emits one file per category: `types.gen.go`, `app.gen.go`,\n"+
+			"    `user.gen.go`.")
 	cmd.Flags().StringVarP(&f.PackageName, "package", "p", "asyncapi", "Golang package name")
 	cmd.Flags().StringVarP(&f.Generate, "generate", "g", "user,application,types", "Generation options")
 	cmd.Flags().BoolVarP(&f.DisableFormatting, "disable-formatting", "f", false, "Disables the code generation formatting")

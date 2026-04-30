@@ -49,6 +49,62 @@ func (g Generator) Generate() (string, error) {
 	return content, nil
 }
 
+// PartTypes is the multi-file output key for type definitions
+// (schemas, message structs, channel parameters and channel-path constants).
+const PartTypes = "types"
+
+// PartApp is the multi-file output key for application-side code
+// (the App controller and its subscriber interface).
+const PartApp = "app"
+
+// PartUser is the multi-file output key for user-side code
+// (the User controller and its subscriber interface).
+const PartUser = "user"
+
+// GenerateImports renders the standard imports/package header used by every
+// generated file. Each file emitted in directory mode starts with this block;
+// `goimports` then prunes unused imports per file.
+func (g Generator) GenerateImports() (string, error) {
+	return g.generateImports(g.Options)
+}
+
+// GenerateParts returns the body of each enabled generation category, keyed by
+// PartTypes / PartApp / PartUser. The returned strings DO NOT include the
+// package/import header — callers (e.g. the multi-file writer in
+// pkg/codegen) are expected to prepend the result of GenerateImports.
+//
+// This is the building block that lets the CLI emit one file per category
+// when `--output` points at a directory.
+func (g Generator) GenerateParts() (map[string]string, error) {
+	parts := map[string]string{}
+
+	if g.Options.Generate.Types {
+		body, err := g.generateTypes()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartTypes] = body
+	}
+
+	if g.Options.Generate.Application {
+		body, err := g.generateApp()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartApp] = body
+	}
+
+	if g.Options.Generate.User {
+		body, err := g.generateUser()
+		if err != nil {
+			return nil, err
+		}
+		parts[PartUser] = body
+	}
+
+	return parts, nil
+}
+
 func (g Generator) generateImports(opts options.Options) (string, error) {
 	imps, err := g.Specification.CustomImports()
 	if err != nil {
