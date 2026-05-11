@@ -26,12 +26,12 @@ func (g Generator) Generate() (string, error) {
 
 	for remainingParts, part := true, ""; remainingParts; part = "" {
 		switch {
-		case g.Options.Generate.Application:
-			part, err = g.generateApp()
-			g.Options.Generate.Application = false
-		case g.Options.Generate.User:
-			part, err = g.generateUser()
-			g.Options.Generate.User = false
+		case g.Options.Generate.Publisher:
+			part, err = g.generatePublisher()
+			g.Options.Generate.Publisher = false
+		case g.Options.Generate.Subscriber:
+			part, err = g.generateSubscriber()
+			g.Options.Generate.Subscriber = false
 		case g.Options.Generate.Types:
 			part, err = g.generateTypes()
 			g.Options.Generate.Types = false
@@ -49,12 +49,12 @@ func (g Generator) Generate() (string, error) {
 	return content, nil
 }
 
-// PartTypes / PartApp / PartUser are the multi-file output keys (matching the
-// v3 generator) used by the CLI when `--output` points at a directory.
+// PartTypes / PartPublisher / PartSubscriber are the multi-file output keys used by
+// the CLI when `--output` points at a directory.
 const (
-	PartTypes = "types"
-	PartApp   = "app"
-	PartUser  = "user"
+	PartTypes      = "types"
+	PartPublisher  = "publisher"
+	PartSubscriber = "subscriber"
 )
 
 // GenerateImports renders the standard imports/package header used by every
@@ -65,7 +65,7 @@ func (g Generator) GenerateImports() (string, error) {
 }
 
 // GenerateParts returns the body of each enabled generation category keyed by
-// PartTypes / PartApp / PartUser. The returned strings do NOT include the
+// PartTypes / PartPublisher / PartSubscriber. The returned strings do NOT include the
 // package/import header — callers are expected to prepend the result of
 // GenerateImports.
 func (g Generator) GenerateParts() (map[string]string, error) {
@@ -79,20 +79,20 @@ func (g Generator) GenerateParts() (map[string]string, error) {
 		parts[PartTypes] = body
 	}
 
-	if g.Options.Generate.Application {
-		body, err := g.generateApp()
+	if g.Options.Generate.Publisher {
+		body, err := g.generatePublisher()
 		if err != nil {
 			return nil, err
 		}
-		parts[PartApp] = body
+		parts[PartPublisher] = body
 	}
 
-	if g.Options.Generate.User {
-		body, err := g.generateUser()
+	if g.Options.Generate.Subscriber {
+		body, err := g.generateSubscriber()
 		if err != nil {
 			return nil, err
 		}
-		parts[PartUser] = body
+		parts[PartSubscriber] = body
 	}
 
 	return parts, nil
@@ -116,12 +116,12 @@ func (g Generator) generateTypes() (string, error) {
 	return TypesGenerator{Specification: g.Specification}.Generate()
 }
 
-func (g Generator) generateApp() (string, error) {
+func (g Generator) generatePublisher() (string, error) {
 	var content string
 
-	// Generate application subscriber
+	// Generate publisher subscriber interface
 	subscriber, err := NewSubscriberGenerator(
-		generators.SideIsApplication,
+		generators.SideIsPublisher,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -129,9 +129,9 @@ func (g Generator) generateApp() (string, error) {
 	}
 	content += subscriber
 
-	// Generate application controller
+	// Generate publisher controller
 	controller, err := NewControllerGenerator(
-		generators.SideIsApplication,
+		generators.SideIsPublisher,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -142,21 +142,22 @@ func (g Generator) generateApp() (string, error) {
 	return content, nil
 }
 
-func (g Generator) generateUser() (string, error) {
+func (g Generator) generateSubscriber() (string, error) {
 	var content string
 
-	// Generate user subscriber
+	// Generate subscriber subscriber interface
 	subscriber, err := NewSubscriberGenerator(
-		generators.SideIsUser,
+		generators.SideIsSubscriber,
 		g.Specification,
 	).Generate()
 	if err != nil {
 		return "", err
 	}
 	content += subscriber
-	// Generate user controller
+
+	// Generate subscriber controller
 	controller, err := NewControllerGenerator(
-		generators.SideIsUser,
+		generators.SideIsSubscriber,
 		g.Specification,
 	).Generate()
 	if err != nil {

@@ -11,14 +11,14 @@ import (
 	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
-// UserController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the User
-type UserController struct {
+// SubscriberController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the Subscriber
+type SubscriberController struct {
 	controller
 }
 
-// NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+// NewSubscriberController links the Subscriber to the broker
+func NewSubscriberController(bc extensions.BrokerController, options ...ControllerOption) (*SubscriberController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -38,10 +38,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		option(&controller)
 	}
 
-	return &UserController{controller: controller}, nil
+	return &SubscriberController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(
+func (c SubscriberController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -90,7 +90,7 @@ func (c UserController) wrapMiddlewares(
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c SubscriberController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -98,19 +98,19 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, path string) context.Context {
+func addSubscriberContextValues(ctx context.Context, path string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "subscriber")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *UserController) Close(ctx context.Context) {
+func (c *SubscriberController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
 // PublishV2Issue129Test will publish messages to 'v2.issue129.test' channel
-func (c *UserController) PublishV2Issue129Test(
+func (c *SubscriberController) PublishV2Issue129Test(
 	ctx context.Context,
 	msg V2Issue129TestMessage,
 ) error {
@@ -118,7 +118,7 @@ func (c *UserController) PublishV2Issue129Test(
 	path := "v2.issue129.test"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -140,7 +140,7 @@ func (c *UserController) PublishV2Issue129Test(
 const AsyncAPIVersion = ""
 
 // controller is the controller that will be used to communicate with the broker
-// It will be used internally by AppController and UserController
+// It will be used internally by PublisherController and SubscriberController
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController

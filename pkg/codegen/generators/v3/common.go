@@ -19,7 +19,7 @@ func NewActionOperations(side generators.Side, spec asyncapi.Specification) Acti
 
 	// Get action count based on action
 	sendCount, receiveCount := spec.GetOperationCountByAction()
-	if side == generators.SideIsApplication {
+	if side == generators.SideIsPublisher {
 		ao.SendCount = sendCount
 		ao.ReceiveCount = receiveCount
 	} else {

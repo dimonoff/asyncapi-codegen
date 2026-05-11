@@ -14,8 +14,8 @@ import (
 
 type Suite struct {
 	broker extensions.BrokerController
-	app    *AppController
-	user   *UserController
+	app    *PublisherController
+	user   *SubscriberController
 	suite.Suite
 }
 
@@ -27,12 +27,12 @@ func NewSuite(broker extensions.BrokerController) *Suite {
 
 func (suite *Suite) SetupTest() {
 	// Create app
-	app, err := NewAppController(suite.broker)
+	app, err := NewPublisherController(suite.broker)
 	suite.Require().NoError(err)
 	suite.app = app
 
 	// Create user
-	user, err := NewUserController(suite.broker)
+	user, err := NewSubscriberController(suite.broker)
 	suite.Require().NoError(err)
 	suite.user = user
 }

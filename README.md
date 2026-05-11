@@ -1,7 +1,7 @@
 # AsyncAPI Codegen
 
 An AsyncAPI Golang Code generator that generates all Go code from the broker
-to the application/user. Just plug your application to your favorite message broker!
+to the server/client. Just plug your server or client to your favorite message broker!
 
 This project was forked from [original asyncapi-codegen](https://github.com/lerenn/asyncapi-codegen) 
 and adapted to some of our needs. The original project didn't seem maintained, so we decided to fork it and maintain it ourselves. 
@@ -87,12 +87,12 @@ docker run -v .:/code -w /code dimonoff/asyncapi-codegen asyncapi-codegen -i ./a
 
 ![basic schema](assets/basic-schema.svg)
 
-Let's imagine a message broker centric architecture: you have the application
-that you are developing on the right and the potential user(s) on the left.
+Let's imagine a message broker centric architecture: you have the server
+that you are developing on the right and the potential subscriber(s) on the left.
 
 Being a two directional communication, both of them can communicate to each
 other through the broker. They can even communicate with themselves, in case
-of multiple users or application replication.
+of multiple subscribers or publisher replication.
 
 For more information about this, please refere to the [official AsyncAPI
 concepts](https://www.asyncapi.com/docs/concepts).
@@ -103,9 +103,9 @@ concepts](https://www.asyncapi.com/docs/concepts).
 
 * <span style="color:yellow">Yellow parts</span>: when using the codegen tool,
 you will generate the code that will act as an adapter (called **controller**)
-between the user, the broker, and the application.
+between the client, the broker, and the server.
 * <span style="color:red">Red parts</span>: you will need to fill these parts
-between user, broker and application. These will allow message production and
+between client, broker and server. These will allow message production and
 reception with the generated code.
 * <span style="color:orange">Orange parts</span>: these parts will be available
 in this repository if you use an already supported broker. However, you can also
@@ -204,8 +204,8 @@ In order to use NATS as a broker, you can use the following code:
 broker, _ := nats.NewController("nats://<host>:<port>")
 defer broker.Close()
 
-// Add NATS controller to a new App controller
-ctrl, err := NewAppController(broker, /* options */)
+// Add NATS controller to a new Server controller
+ctrl, err := NewPublisherController(broker, /* options */)
 
 //...
 ```
@@ -250,8 +250,8 @@ In order to use NATS JetStream as a broker, you can use the following code:
 broker, _ := natsjetstream.NewController("nats://<host>:<port>", /* options */)
 defer broker.Close()
 
-// Add NATS controller to a new App controller
-ctrl, err := NewAppController(broker)
+// Add NATS controller to a new Server controller
+ctrl, err := NewPublisherController(broker)
 
 //...
 ```
@@ -292,16 +292,16 @@ your broker to the generated code.
 
 ### Generation parts (`-g, --generate`)
 
-The default options for asyncapi-codegen will generate everything; user, application,
+The default options for asyncapi-codegen will generate everything; publisher, subscriber,
 and type definitions but you can generate subsets of those via the -generate
-flag. It defaults to user,application,types
+flag. It defaults to `publisher,subscriber,types`
 but you can specify any combination of those.
 
 Here are the universal parts that you can generate:
 
-* `application`: generate the application boilerplate. `application` requires
+* `publisher`: generate the publisher boilerplate. `publisher` requires
   the types in the same package to compile.
-* `user`: generate the user boilerplate. It, too, requires the types to be
+* `subscriber`: generate the subscriber boilerplate. It, too, requires the types to be
   present in its package.
 * `types`: all type definitions for all types in the AsyncAPI spec.
   This will be everything under `#components`, as well as request parameter,
@@ -310,7 +310,7 @@ Here are the universal parts that you can generate:
 ### Package name (`-p, --package`)
 
 The package name is the name of the package that will be used in the generated
-code. It is important to have the same package name for the user, application,
+code. It is important to have the same package name for the publisher, subscriber,
 and types in order to compile the code.
 
 ### Input files (`-i, --input`)
@@ -364,11 +364,11 @@ Here are the generated JSON sent, given by the different options:
 
 You can use middlewares that will be executing when receiving and publishing
 messages. You can add one or multiple middlewares using the  `WithMiddlewares`
-function in the initialization of the App or User controller:
+function in the initialization of the Publisher or Subscriber controller:
 
 ```golang
-// Create a new app controller with middlewares
-ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(myMiddleware1, myMiddleware2 /*, ... */))
+// Create a new publisher controller with middlewares
+ctrl, _ := NewPublisherController(/* Broker of your choice */, WithMiddlewares(myMiddleware1, myMiddleware2 /*, ... */))
 ```
 
 Here the function signature that should be satisfied:
@@ -497,8 +497,8 @@ import(
 )
 
 func main() {
-  // Create a new app controller with an Elastic Common Schema JSON compatible logger
-  ctrl, _ := NewAppController(/* Broker of your choice */, WithLogger(log.NewECS()))
+  // Create a new publisher controller with an Elastic Common Schema JSON compatible logger
+  ctrl, _ := NewPublisherController(/* Broker of your choice */, WithLogger(log.NewECS()))
 
   // ...
 }
@@ -518,9 +518,9 @@ import(
 )
 
 func main() {
-  // Create a new app controller with a middleware for logging incoming/outgoing messages
+  // Create a new publisher controller with a middleware for logging incoming/outgoing messages
   loggingMiddleware := middleware.Logging(log.NewECS())
-  ctrl, _ := NewAppController(/* Broker of your choice */, WithMiddlewares(loggingMiddleware))
+  ctrl, _ := NewPublisherController(/* Broker of your choice */, WithMiddlewares(loggingMiddleware))
 
   // ...
 }
@@ -567,7 +567,7 @@ You can then create a controller with a logger using similar lines:
 
 ```golang
 // Create a new app controller with the custom logger
-ctrl, _ := NewAppController(
+ctrl, _ := NewPublisherController(
   /* Broker of your choice */,
   WithLogger(SimpleLogger{}),                         /* Use on as internal logger */
   WithMiddleware(middleware.Logging(SimpleLogger{})), /* Use to log incoming/outgoing messages */
@@ -596,12 +596,12 @@ func main() {
   // Add a version wrapper to the broker
   vw := versioning.NewWrapper(broker)
 
-  // Create application for version 1
-  appV1, _ := v1.NewAppController(vw, /* controller options */)
+  // Create publisher for version 1
+  appV1, _ := v1.NewPublisherController(vw, /* controller options */)
   defer appV1.Close(context.Background())
 
-  // Create v2 app
-  appV2, _ := v2.NewAppController(vw, /* controller options */)
+  // Create v2 publisher
+  appV2, _ := v2.NewPublisherController(vw, /* controller options */)
   defer appV2.Close(context.Background())
 
   // ...
@@ -771,11 +771,11 @@ These extension properties apply to "Schema Objects" in AsyncAPI spec.
 
 You can use an error handler that will be executed when processing for messages
 failed. To add a custom ErrorHandler to your controller use the  `WithErrorHandler`
-function in the initialization of the App or User controller:
+function in the initialization of the Publisher or Subscriber controller:
 
 ```golang
-// Create a new app controller with ErrorHandler
-ctrl, _ := NewAppController(/* Broker of your choice */, WithErrorHandler(myErrorHandler), ...)
+// Create a new publisher controller with ErrorHandler
+ctrl, _ := NewPublisherController(/* Broker of your choice */, WithErrorHandler(myErrorHandler), ...)
 ```
 
 Here the function signature that should be satisfied:
@@ -791,8 +791,8 @@ Acks and Naks will be executed after the ErrorHandler, you can use the Acknowled
 
 ##### Use the Logging ErrorHandler
 ```golang
-// Create a new app controller with Logging ErrorHandler
-ctrl, _ := NewAppController(/* Broker of your choice */, WithErrorHandler(errorhandlers.Logging(mylogger)), ...)
+// Create a new publisher controller with Logging ErrorHandler
+ctrl, _ := NewPublisherController(/* Broker of your choice */, WithErrorHandler(errorhandlers.Logging(mylogger)), ...)
 ```
 
 ##### Build a custom ErrorHandler and handle Ack/Nak of the message

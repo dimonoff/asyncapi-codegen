@@ -11,20 +11,20 @@ import (
 	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
-// AppSubscriber contains all handlers that are listening messages for App
-type AppSubscriber interface {
+// PublisherSubscriber contains all handlers that are listening messages for Publisher
+type PublisherSubscriber interface {
 	// ReceiveTestOperationReceived receive all TestMessageFromTestChannel messages from Test channel.
 	ReceiveTestOperationReceived(ctx context.Context, msg TestMessageFromTestChannel) error
 }
 
-// AppController is the structure that provides sending capabilities to the
-// developer and and connect the broker with the App
-type AppController struct {
+// PublisherController is the structure that provides sending capabilities to the
+// developer and and connect the broker with the Publisher
+type PublisherController struct {
 	controller
 }
 
-// NewAppController links the App to the broker
-func NewAppController(bc extensions.BrokerController, options ...ControllerOption) (*AppController, error) {
+// NewPublisherController links the Publisher to the broker
+func NewPublisherController(bc extensions.BrokerController, options ...ControllerOption) (*PublisherController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -44,10 +44,10 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		option(&controller)
 	}
 
-	return &AppController{controller: controller}, nil
+	return &PublisherController{controller: controller}, nil
 }
 
-func (c AppController) wrapMiddlewares(
+func (c PublisherController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -96,7 +96,7 @@ func (c AppController) wrapMiddlewares(
 	}
 }
 
-func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c PublisherController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -104,26 +104,26 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 	return wrapped(ctx, msg)
 }
 
-func addAppContextValues(ctx context.Context, addr string) context.Context {
+func addPublisherContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "publisher")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *AppController) Close(ctx context.Context) {
+func (c *PublisherController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeFromAllChannels(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed publisher controller")
 }
 
 // SubscribeToAllChannels will receive messages from channels where channel has
-// no parameter on which the app is expecting messages. For channels with parameters,
+// no parameter on which the controller is expecting messages. For channels with parameters,
 // they should be subscribed independently.
-func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
+func (c *PublisherController) SubscribeToAllChannels(ctx context.Context, as PublisherSubscriber) error {
 	if as == nil {
-		return extensions.ErrNilAppSubscriber
+		return extensions.ErrNilPublisherHandler
 	}
 
 	if err := c.SubscribeToReceiveTestOperation(ctx, as.ReceiveTestOperationReceived); err != nil {
@@ -134,7 +134,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 }
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
+func (c *PublisherController) UnsubscribeFromAllChannels(ctx context.Context) {
 	c.UnsubscribeFromReceiveTestOperation(ctx)
 }
 
@@ -146,7 +146,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToReceiveTestOperation(
+func (c *PublisherController) SubscribeToReceiveTestOperation(
 	ctx context.Context,
 	fn func(ctx context.Context, msg TestMessageFromTestChannel) error,
 ) error {
@@ -154,7 +154,7 @@ func (c *AppController) SubscribeToReceiveTestOperation(
 	addr := "v3.issue131.test"
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already subscribed
@@ -173,7 +173,7 @@ func (c *AppController) SubscribeToReceiveTestOperation(
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
-	// Asynchronously listen to new messages and pass them to app receiver
+	// Asynchronously listen to new messages and pass them to the receiver
 	go func() {
 		for {
 			// Listen to next message
@@ -195,14 +195,14 @@ func (c *AppController) SubscribeToReceiveTestOperation(
 	return nil
 }
 
-func (c *AppController) listenToReceiveTestOperationNextMessage(
+func (c *PublisherController) listenToReceiveTestOperationNextMessage(
 	addr string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg TestMessageFromTestChannel) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addAppContextValues(msgCtx, addr)
+	msgCtx = addPublisherContextValues(msgCtx, addr)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -246,7 +246,7 @@ func (c *AppController) listenToReceiveTestOperationNextMessage(
 
 // UnsubscribeFromReceiveTestOperation will stop the reception of TestMessageFromTestChannel messages from Test channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromReceiveTestOperation(
+func (c *PublisherController) UnsubscribeFromReceiveTestOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
@@ -259,7 +259,7 @@ func (c *AppController) UnsubscribeFromReceiveTestOperation(
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -270,14 +270,14 @@ func (c *AppController) UnsubscribeFromReceiveTestOperation(
 	c.logger.Info(ctx, "Unsubscribed from channel")
 }
 
-// UserController is the structure that provides sending capabilities to the
-// developer and and connect the broker with the User
-type UserController struct {
+// SubscriberController is the structure that provides sending capabilities to the
+// developer and and connect the broker with the Subscriber
+type SubscriberController struct {
 	controller
 }
 
-// NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+// NewSubscriberController links the Subscriber to the broker
+func NewSubscriberController(bc extensions.BrokerController, options ...ControllerOption) (*SubscriberController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -297,10 +297,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		option(&controller)
 	}
 
-	return &UserController{controller: controller}, nil
+	return &SubscriberController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(
+func (c SubscriberController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -349,7 +349,7 @@ func (c UserController) wrapMiddlewares(
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c SubscriberController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -357,14 +357,14 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, addr string) context.Context {
+func addSubscriberContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "subscriber")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *UserController) Close(ctx context.Context) {
+func (c *SubscriberController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
@@ -372,7 +372,7 @@ func (c *UserController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) SendToReceiveTestOperation(
+func (c *SubscriberController) SendToReceiveTestOperation(
 	ctx context.Context,
 	msg TestMessageFromTestChannel,
 ) error {
@@ -380,7 +380,7 @@ func (c *UserController) SendToReceiveTestOperation(
 	addr := "v3.issue131.test"
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage

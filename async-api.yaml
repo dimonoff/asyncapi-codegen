@@ -1,0 +1,164 @@
+asyncapi: 3.0.0
+info:
+  title: AsyncAPI Codegen Test Components
+  version: 0.1.0
+  description: |
+    Minimal but representative contract used to generate test components
+    with asyncapi-codegen.
+
+defaultContentType: application/json
+
+servers:
+  localKafka:
+    host: localhost:9092
+    protocol: kafka
+    description: Local Kafka broker for generation tests
+
+channels:
+  userEvents:
+    address: users.{userId}.events
+    description: User domain events
+    parameters:
+      userId:
+        description: User identifier
+    messages:
+      userCreated:
+        $ref: '#/components/messages/UserCreated'
+      userUpdated:
+        $ref: '#/components/messages/UserUpdated'
+
+operations:
+  publishUserEvent:
+    action: send
+    channel:
+      $ref: '#/channels/userEvents'
+    summary: Publish user events
+    messages:
+      - $ref: '#/channels/userEvents/messages/userCreated'
+      - $ref: '#/channels/userEvents/messages/userUpdated'
+
+  consumeUserEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/userEvents'
+    summary: Consume user events
+
+components:
+  messages:
+    UserCreated:
+      name: user.created
+      title: User Created
+      summary: Emitted when a user is created.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/UserCreatedEvent'
+
+    UserUpdated:
+      name: user.updated
+      title: User Updated
+      summary: Emitted when a user is updated.
+      headers:
+        $ref: '#/components/schemas/KafkaHeaders'
+      payload:
+        $ref: '#/components/schemas/UserUpdatedEvent'
+
+  schemas:
+    KafkaHeaders:
+      type: object
+      additionalProperties: false
+      required:
+        - event_type
+        - source
+        - version
+      properties:
+        event_type:
+          type: string
+          enum:
+            - USER_CREATED
+            - USER_UPDATED
+        source:
+          type: string
+        version:
+          type: string
+
+    EventType:
+      type: string
+      enum:
+        - USER_CREATED
+        - USER_UPDATED
+
+    BaseEvent:
+      type: object
+      additionalProperties: false
+      required:
+        - eventId
+        - eventType
+        - timestamp
+      properties:
+        eventId:
+          type: integer
+          format: int64
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        timestamp:
+          type: integer
+          format: int64
+
+    UserCreatedData:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - email
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+
+    UserUpdatedData:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - changedFields
+      properties:
+        userId:
+          type: string
+        changedFields:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    UserCreatedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          additionalProperties: false
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/UserCreatedData'
+
+    UserUpdatedEvent:
+      allOf:
+        - $ref: '#/components/schemas/BaseEvent'
+        - type: object
+          additionalProperties: false
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/UserUpdatedData'
+

@@ -12,14 +12,14 @@ var (
 	// ErrContextCanceled is given when a given context is canceled.
 	ErrContextCanceled = fmt.Errorf("%w: context canceled", ErrAsyncAPI)
 
-	// ErrNilBrokerController is raised when a nil broker controller is user.
+	// ErrNilBrokerController is raised when a nil broker controller is used.
 	ErrNilBrokerController = fmt.Errorf("%w: nil broker controller has been used", ErrAsyncAPI)
 
-	// ErrNilAppSubscriber is raised when a nil app subscriber is used (asyncapiv2 only).
-	ErrNilAppSubscriber = fmt.Errorf("%w: nil app subscriber has been used", ErrAsyncAPI)
+	// ErrNilPublisherHandler is raised when a nil handler is passed to a PublisherController.
+	ErrNilPublisherHandler = fmt.Errorf("%w: nil publisher handler has been used", ErrAsyncAPI)
 
-	// ErrNilUserSubscriber is raised when a nil user subscriber is used (asyncapiv2 only).
-	ErrNilUserSubscriber = fmt.Errorf("%w: nil user subscriber has been used", ErrAsyncAPI)
+	// ErrNilSubscriberHandler is raised when a nil handler is passed to a SubscriberController.
+	ErrNilSubscriberHandler = fmt.Errorf("%w: nil subscriber handler has been used", ErrAsyncAPI)
 
 	// ErrAlreadySubscribedChannel is raised when a subscription is done twice
 	// or more without unsubscribing.

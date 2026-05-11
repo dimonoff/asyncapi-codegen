@@ -13,8 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// AppSubscriber contains all handlers that are listening messages for App
-type AppSubscriber interface {
+// PublisherSubscriber contains all handlers that are listening messages for Publisher
+type PublisherSubscriber interface {
 	// PingOperationReceived receive all Ping messages from Ping channel.
 	PingOperationReceived(ctx context.Context, msg PingMessage) error
 
@@ -22,14 +22,14 @@ type AppSubscriber interface {
 	PingWithIDOperationReceived(ctx context.Context, msg PingWithIDMessage) error
 }
 
-// AppController is the structure that provides sending capabilities to the
-// developer and and connect the broker with the App
-type AppController struct {
+// PublisherController is the structure that provides sending capabilities to the
+// developer and and connect the broker with the Publisher
+type PublisherController struct {
 	controller
 }
 
-// NewAppController links the App to the broker
-func NewAppController(bc extensions.BrokerController, options ...ControllerOption) (*AppController, error) {
+// NewPublisherController links the Publisher to the broker
+func NewPublisherController(bc extensions.BrokerController, options ...ControllerOption) (*PublisherController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -49,10 +49,10 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		option(&controller)
 	}
 
-	return &AppController{controller: controller}, nil
+	return &PublisherController{controller: controller}, nil
 }
 
-func (c AppController) wrapMiddlewares(
+func (c PublisherController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -101,7 +101,7 @@ func (c AppController) wrapMiddlewares(
 	}
 }
 
-func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c PublisherController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -109,26 +109,26 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 	return wrapped(ctx, msg)
 }
 
-func addAppContextValues(ctx context.Context, addr string) context.Context {
+func addPublisherContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "publisher")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *AppController) Close(ctx context.Context) {
+func (c *PublisherController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeFromAllChannels(ctx)
 
-	c.logger.Info(ctx, "Closed app controller")
+	c.logger.Info(ctx, "Closed publisher controller")
 }
 
 // SubscribeToAllChannels will receive messages from channels where channel has
-// no parameter on which the app is expecting messages. For channels with parameters,
+// no parameter on which the controller is expecting messages. For channels with parameters,
 // they should be subscribed independently.
-func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscriber) error {
+func (c *PublisherController) SubscribeToAllChannels(ctx context.Context, as PublisherSubscriber) error {
 	if as == nil {
-		return extensions.ErrNilAppSubscriber
+		return extensions.ErrNilPublisherHandler
 	}
 
 	if err := c.SubscribeToPingOperation(ctx, as.PingOperationReceived); err != nil {
@@ -142,7 +142,7 @@ func (c *AppController) SubscribeToAllChannels(ctx context.Context, as AppSubscr
 }
 
 // UnsubscribeFromAllChannels will stop the subscription of all remaining subscribed channels
-func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
+func (c *PublisherController) UnsubscribeFromAllChannels(ctx context.Context) {
 	c.UnsubscribeFromPingOperation(ctx)
 	c.UnsubscribeFromPingWithIDOperation(ctx)
 }
@@ -155,7 +155,7 @@ func (c *AppController) UnsubscribeFromAllChannels(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingOperation(
+func (c *PublisherController) SubscribeToPingOperation(
 	ctx context.Context,
 	fn func(ctx context.Context, msg PingMessage) error,
 ) error {
@@ -163,7 +163,7 @@ func (c *AppController) SubscribeToPingOperation(
 	addr := "v3.issue130.ping"
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already subscribed
@@ -182,7 +182,7 @@ func (c *AppController) SubscribeToPingOperation(
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
-	// Asynchronously listen to new messages and pass them to app receiver
+	// Asynchronously listen to new messages and pass them to the receiver
 	go func() {
 		for {
 			// Listen to next message
@@ -204,14 +204,14 @@ func (c *AppController) SubscribeToPingOperation(
 	return nil
 }
 
-func (c *AppController) listenToPingOperationNextMessage(
+func (c *PublisherController) listenToPingOperationNextMessage(
 	addr string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg PingMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addAppContextValues(msgCtx, addr)
+	msgCtx = addPublisherContextValues(msgCtx, addr)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -255,7 +255,7 @@ func (c *AppController) listenToPingOperationNextMessage(
 
 // ReplyToPingOperation is a helper function to
 // reply to a Ping message with a Pong message on Pong channel.
-func (c *AppController) ReplyToPingOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
+func (c *PublisherController) ReplyToPingOperation(ctx context.Context, recvMsg PingMessage, fn func(replyMsg *PongMessage)) error {
 	// Create reply message
 	replyMsg := NewPongMessage()
 
@@ -268,7 +268,7 @@ func (c *AppController) ReplyToPingOperation(ctx context.Context, recvMsg PingMe
 
 // UnsubscribeFromPingOperation will stop the reception of Ping messages from Ping channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingOperation(
+func (c *PublisherController) UnsubscribeFromPingOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
@@ -281,7 +281,7 @@ func (c *AppController) UnsubscribeFromPingOperation(
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -297,7 +297,7 @@ func (c *AppController) UnsubscribeFromPingOperation(
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SubscribeToPingWithIDOperation(
+func (c *PublisherController) SubscribeToPingWithIDOperation(
 	ctx context.Context,
 	fn func(ctx context.Context, msg PingWithIDMessage) error,
 ) error {
@@ -305,7 +305,7 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 	addr := "v3.issue130.pingWithID"
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if the controller is already subscribed
@@ -324,7 +324,7 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 	}
 	c.logger.Info(ctx, "Subscribed to channel")
 
-	// Asynchronously listen to new messages and pass them to app receiver
+	// Asynchronously listen to new messages and pass them to the receiver
 	go func() {
 		for {
 			// Listen to next message
@@ -346,14 +346,14 @@ func (c *AppController) SubscribeToPingWithIDOperation(
 	return nil
 }
 
-func (c *AppController) listenToPingWithIDOperationNextMessage(
+func (c *PublisherController) listenToPingWithIDOperationNextMessage(
 	addr string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg PingWithIDMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addAppContextValues(msgCtx, addr)
+	msgCtx = addPublisherContextValues(msgCtx, addr)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -402,7 +402,7 @@ func (c *AppController) listenToPingWithIDOperationNextMessage(
 
 // ReplyToPingWithIDOperation is a helper function to
 // reply to a PingWithID message with a PongWithID message on PongWithID channel.
-func (c *AppController) ReplyToPingWithIDOperation(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
+func (c *PublisherController) ReplyToPingWithIDOperation(ctx context.Context, recvMsg PingWithIDMessage, fn func(replyMsg *PongWithIDMessage)) error {
 	// Create reply message
 	replyMsg := NewPongWithIDMessage()
 	replyMsg.SetAsResponseFrom(&recvMsg)
@@ -416,7 +416,7 @@ func (c *AppController) ReplyToPingWithIDOperation(ctx context.Context, recvMsg 
 
 // UnsubscribeFromPingWithIDOperation will stop the reception of PingWithID messages from PingWithID channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *AppController) UnsubscribeFromPingWithIDOperation(
+func (c *PublisherController) UnsubscribeFromPingWithIDOperation(
 	ctx context.Context,
 ) {
 	// Get channel address
@@ -429,7 +429,7 @@ func (c *AppController) UnsubscribeFromPingWithIDOperation(
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -444,7 +444,7 @@ func (c *AppController) UnsubscribeFromPingWithIDOperation(
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SendAsReplyToPingOperation(
+func (c *PublisherController) SendAsReplyToPingOperation(
 	ctx context.Context,
 	msg PongMessage,
 ) error {
@@ -452,7 +452,7 @@ func (c *AppController) SendAsReplyToPingOperation(
 	addr := "v3.issue130.pong"
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -474,7 +474,7 @@ func (c *AppController) SendAsReplyToPingOperation(
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *AppController) SendAsReplyToPingWithIDOperation(
+func (c *PublisherController) SendAsReplyToPingWithIDOperation(
 	ctx context.Context,
 	msg PongWithIDMessage,
 ) error {
@@ -489,7 +489,7 @@ func (c *AppController) SendAsReplyToPingWithIDOperation(
 	}
 
 	// Set context
-	ctx = addAppContextValues(ctx, addr)
+	ctx = addPublisherContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
@@ -508,14 +508,14 @@ func (c *AppController) SendAsReplyToPingWithIDOperation(
 	})
 }
 
-// UserController is the structure that provides sending capabilities to the
-// developer and and connect the broker with the User
-type UserController struct {
+// SubscriberController is the structure that provides sending capabilities to the
+// developer and and connect the broker with the Subscriber
+type SubscriberController struct {
 	controller
 }
 
-// NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+// NewSubscriberController links the Subscriber to the broker
+func NewSubscriberController(bc extensions.BrokerController, options ...ControllerOption) (*SubscriberController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -535,10 +535,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		option(&controller)
 	}
 
-	return &UserController{controller: controller}, nil
+	return &SubscriberController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(
+func (c SubscriberController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -587,7 +587,7 @@ func (c UserController) wrapMiddlewares(
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c SubscriberController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -595,14 +595,14 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, addr string) context.Context {
+func addSubscriberContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "subscriber")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *UserController) Close(ctx context.Context) {
+func (c *SubscriberController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
@@ -611,7 +611,7 @@ func (c *UserController) Close(ctx context.Context) {
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) SendToPingOperation(
+func (c *SubscriberController) SendToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) error {
@@ -619,7 +619,7 @@ func (c *UserController) SendToPingOperation(
 	addr := "v3.issue130.ping"
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -646,7 +646,7 @@ func (c *UserController) SendToPingOperation(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestToPingOperation(
+func (c *SubscriberController) RequestToPingOperation(
 	ctx context.Context,
 	msg PingMessage,
 ) (PongMessage, error) {
@@ -654,7 +654,7 @@ func (c *UserController) RequestToPingOperation(
 	addr := "v3.issue130.pong"
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "wait-for")
 
 	// Subscribe to broker channel
@@ -697,14 +697,14 @@ func (c *UserController) RequestToPingOperation(
 	}
 }
 
-func (c *UserController) waitForPingOperationNextResponse(
+func (c *SubscriberController) waitForPingOperationNextResponse(
 	ctx context.Context,
 	addr string,
 	sub extensions.BrokerChannelSubscription,
 ) (*PongMessage, error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addUserContextValues(msgCtx, addr)
+	msgCtx = addSubscriberContextValues(msgCtx, addr)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "wait-for")
 	defer cancel()
 
@@ -750,7 +750,7 @@ func (c *UserController) waitForPingOperationNextResponse(
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) SendToPingWithIDOperation(
+func (c *SubscriberController) SendToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) error {
@@ -763,7 +763,7 @@ func (c *UserController) SendToPingWithIDOperation(
 	}
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 
@@ -791,7 +791,7 @@ func (c *UserController) SendToPingWithIDOperation(
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *UserController) RequestToPingWithIDOperation(
+func (c *SubscriberController) RequestToPingWithIDOperation(
 	ctx context.Context,
 	msg PingWithIDMessage,
 ) (PongWithIDMessage, error) {
@@ -799,7 +799,7 @@ func (c *UserController) RequestToPingWithIDOperation(
 	addr := "v3.issue130.pongWithID"
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "wait-for")
 
 	// Subscribe to broker channel
@@ -847,7 +847,7 @@ func (c *UserController) RequestToPingWithIDOperation(
 	}
 }
 
-func (c *UserController) waitForPingWithIDOperationNextResponse(
+func (c *SubscriberController) waitForPingWithIDOperationNextResponse(
 	ctx context.Context,
 	addr string,
 	sub extensions.BrokerChannelSubscription,
@@ -855,7 +855,7 @@ func (c *UserController) waitForPingWithIDOperationNextResponse(
 ) (*PongWithIDMessage, error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addUserContextValues(msgCtx, addr)
+	msgCtx = addSubscriberContextValues(msgCtx, addr)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "wait-for")
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsCorrelationID, msg.CorrelationID())
 	defer cancel()
@@ -965,26 +965,6 @@ type Error struct {
 func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
-
-// Message 'PingMessageFromPingChannel' reference another one at '#/components/messages/ping'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
-
-// Message 'PingMessageFromPingWithIDChannel' reference another one at '#/components/messages/pingWithID'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
-
-// Message 'PongMessageFromPongChannel' reference another one at '#/components/messages/pong'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
-
-// Message 'PongMessageFromPongWithIDChannel' reference another one at '#/components/messages/pongWithID'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
 
 // PingMessagePayload is a schema from the AsyncAPI specification required in messages
 type PingMessagePayload struct {

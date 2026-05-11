@@ -1,6 +1,6 @@
 module asyncapi-codegen/ci/dagger
 
-go 1.21.7
+go 1.25.0
 
 require (
 	github.com/99designs/gqlgen v0.17.49
@@ -8,7 +8,7 @@ require (
 	github.com/dimonoff/asyncapi-codegen v0.34.0
 	github.com/vektah/gqlparser/v2 v2.5.16
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.20.0
 )
 
 require (
@@ -31,9 +31,9 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.4.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.opentelemetry.io/proto/otlp v1.3.1
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
 	google.golang.org/grpc v1.64.0

@@ -26,12 +26,12 @@ func (g Generator) Generate() (string, error) {
 
 	for remainingParts, part := true, ""; remainingParts; part = "" {
 		switch {
-		case g.Options.Generate.Application:
-			part, err = g.generateApp()
-			g.Options.Generate.Application = false
-		case g.Options.Generate.User:
-			part, err = g.generateUser()
-			g.Options.Generate.User = false
+		case g.Options.Generate.Publisher:
+			part, err = g.generatePublisher()
+			g.Options.Generate.Publisher = false
+		case g.Options.Generate.Subscriber:
+			part, err = g.generateSubscriber()
+			g.Options.Generate.Subscriber = false
 		case g.Options.Generate.Types:
 			part, err = g.generateTypes()
 			g.Options.Generate.Types = false
@@ -53,46 +53,28 @@ func (g Generator) Generate() (string, error) {
 // (controller, options, error, channel parameters, channel-path constants).
 const PartTypes = "types"
 
-// PartMessages is the multi-file output key for the message section
-// (channel-scoped message comments + message structs declared under
-// `components.messages`).
+// PartMessages is the multi-file output key for the message section.
 const PartMessages = "messages"
 
-// PartSchemas is the multi-file output key for the schema section
-// (Go types generated from `components.schemas`).
+// PartSchemas is the multi-file output key for the schema section.
 const PartSchemas = "schemas"
 
-// PartApp is the multi-file output key for application-side code
-// (the App controller and its subscriber interface).
-const PartApp = "app"
+// PartPublisher is the multi-file output key for publisher-side code
+// (the Publisher controller and its handler interface).
+const PartPublisher = "publisher"
 
-// PartUser is the multi-file output key for user-side code
-// (the User controller and its subscriber interface).
-const PartUser = "user"
+// PartSubscriber is the multi-file output key for subscriber-side code
+// (the Subscriber controller and its handler interface).
+const PartSubscriber = "subscriber"
 
 // GenerateImports renders the standard imports/package header used by every
-// generated file. Each file emitted in directory mode starts with this block;
-// `goimports` then prunes unused imports per file.
+// generated file.
 func (g Generator) GenerateImports() (string, error) {
 	return g.generateImports(g.Options)
 }
 
 // GenerateParts returns the body of each enabled generation category, keyed
-// by PartTypes / PartMessages / PartSchemas / PartApp / PartUser. The
-// returned strings DO NOT include the package/import header — callers (e.g.
-// the multi-file writer in pkg/codegen) are expected to prepend the result
-// of GenerateImports.
-//
-// When `--generate types` is enabled, the type output is split into three
-// per-section files instead of being written as one monolithic file:
-//
-//   - PartTypes    → core (controller, options, channel params, paths)
-//   - PartMessages → message structs and broker codecs
-//   - PartSchemas  → schema definitions from components.schemas
-//
-// This keeps the legacy single-file mode unchanged (it still uses the
-// monolithic `Generate()` method) while giving directory-mode users a more
-// navigable layout.
+// by PartTypes / PartMessages / PartSchemas / PartPublisher / PartSubscriber.
 func (g Generator) GenerateParts() (map[string]string, error) {
 	parts := map[string]string{}
 
@@ -118,20 +100,20 @@ func (g Generator) GenerateParts() (map[string]string, error) {
 		parts[PartSchemas] = schemas
 	}
 
-	if g.Options.Generate.Application {
-		body, err := g.generateApp()
+	if g.Options.Generate.Publisher {
+		body, err := g.generatePublisher()
 		if err != nil {
 			return nil, err
 		}
-		parts[PartApp] = body
+		parts[PartPublisher] = body
 	}
 
-	if g.Options.Generate.User {
-		body, err := g.generateUser()
+	if g.Options.Generate.Subscriber {
+		body, err := g.generateSubscriber()
 		if err != nil {
 			return nil, err
 		}
-		parts[PartUser] = body
+		parts[PartSubscriber] = body
 	}
 
 	return parts, nil
@@ -155,12 +137,12 @@ func (g Generator) generateTypes() (string, error) {
 	return TypesGenerator{Specification: g.Specification}.Generate()
 }
 
-func (g Generator) generateApp() (string, error) {
+func (g Generator) generatePublisher() (string, error) {
 	var content string
 
-	// Generate application listener
+	// Generate publisher handler interface
 	listener, err := NewSubscriberGenerator(
-		generators.SideIsApplication,
+		generators.SideIsPublisher,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -168,9 +150,9 @@ func (g Generator) generateApp() (string, error) {
 	}
 	content += listener
 
-	// Generate application controller
+	// Generate publisher controller
 	controller, err := NewControllerGenerator(
-		generators.SideIsApplication,
+		generators.SideIsPublisher,
 		g.Specification,
 	).Generate()
 	if err != nil {
@@ -181,21 +163,22 @@ func (g Generator) generateApp() (string, error) {
 	return content, nil
 }
 
-func (g Generator) generateUser() (string, error) {
+func (g Generator) generateSubscriber() (string, error) {
 	var content string
 
-	// Generate user listener
+	// Generate subscriber handler interface
 	listener, err := NewSubscriberGenerator(
-		generators.SideIsUser,
+		generators.SideIsSubscriber,
 		g.Specification,
 	).Generate()
 	if err != nil {
 		return "", err
 	}
 	content += listener
-	// Generate user controller
+
+	// Generate subscriber controller
 	controller, err := NewControllerGenerator(
-		generators.SideIsUser,
+		generators.SideIsSubscriber,
 		g.Specification,
 	).Generate()
 	if err != nil {

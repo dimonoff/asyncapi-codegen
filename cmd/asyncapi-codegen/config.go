@@ -65,10 +65,10 @@ func (f *Flags) SetToCommand(cmd *cobra.Command) {
 			"  - If it ends with `.go`, the generator runs in legacy single-file mode\n"+
 			"    and writes everything to that file.\n"+
 			"  - Otherwise it is treated as a directory (created if missing) and the\n"+
-			"    generator emits one file per category: `types.gen.go`, `app.gen.go`,\n"+
-			"    `user.gen.go`.")
+			"    generator emits one file per category: `types.gen.go`, `publisher.gen.go`,\n"+
+			"    `subscriber.gen.go`.")
 	cmd.Flags().StringVarP(&f.PackageName, "package", "p", "asyncapi", "Golang package name")
-	cmd.Flags().StringVarP(&f.Generate, "generate", "g", "user,application,types", "Generation options")
+	cmd.Flags().StringVarP(&f.Generate, "generate", "g", "publisher,subscriber,types", "Generation options")
 	cmd.Flags().BoolVarP(&f.DisableFormatting, "disable-formatting", "f", false, "Disables the code generation formatting")
 	cmd.Flags().StringVarP(&f.ConvertKeys, "convert-keys", "c", "none",
 		"Schema property key names conversion strategy.\nSupported values: snake, camel, kebab, none.")
@@ -97,10 +97,10 @@ func (f Flags) ToCodegenOptions() (options.Options, error) {
 		gens := strings.Split(f.Generate, ",")
 		for _, v := range gens {
 			switch v {
-			case "application":
-				opt.Generate.Application = true
-			case "user":
-				opt.Generate.User = true
+			case "publisher":
+				opt.Generate.Publisher = true
+			case "subscriber":
+				opt.Generate.Subscriber = true
 			case "types":
 				opt.Generate.Types = true
 			default:

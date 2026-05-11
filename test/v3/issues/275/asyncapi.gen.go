@@ -68,11 +68,6 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Message 'TestMessageMessageFromV3OmitemptyTestChannel' reference another one at '#/components/messages/TestMessage'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
-
 // TestMessageMessage is the message expected for 'TestMessageMessage' channel.
 type TestMessageMessage struct {
 	// Payload will be inserted in the message payload

@@ -11,14 +11,14 @@ import (
 	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
-// UserController is the structure that provides sending capabilities to the
-// developer and and connect the broker with the User
-type UserController struct {
+// SubscriberController is the structure that provides sending capabilities to the
+// developer and and connect the broker with the Subscriber
+type SubscriberController struct {
 	controller
 }
 
-// NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+// NewSubscriberController links the Subscriber to the broker
+func NewSubscriberController(bc extensions.BrokerController, options ...ControllerOption) (*SubscriberController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -38,10 +38,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		option(&controller)
 	}
 
-	return &UserController{controller: controller}, nil
+	return &SubscriberController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(
+func (c SubscriberController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -90,7 +90,7 @@ func (c UserController) wrapMiddlewares(
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c SubscriberController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -98,14 +98,14 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, addr string) context.Context {
+func addSubscriberContextValues(ctx context.Context, addr string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "subscriber")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, addr)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *UserController) Close(ctx context.Context) {
+func (c *SubscriberController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
@@ -113,7 +113,7 @@ func (c *UserController) Close(ctx context.Context) {
 //
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *UserController) SendToReceiveTestOperation(
+func (c *SubscriberController) SendToReceiveTestOperation(
 	ctx context.Context,
 	msg TestMessageFromTestChannel,
 ) error {
@@ -121,7 +121,7 @@ func (c *UserController) SendToReceiveTestOperation(
 	addr := "v3.issue129.test"
 
 	// Set context
-	ctx = addUserContextValues(ctx, addr)
+	ctx = addSubscriberContextValues(ctx, addr)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage

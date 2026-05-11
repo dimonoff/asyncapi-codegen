@@ -11,14 +11,14 @@ import (
 	"github.com/dimonoff/asyncapi-codegen/pkg/extensions"
 )
 
-// AppController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the App
-type AppController struct {
+// PublisherController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the Publisher
+type PublisherController struct {
 	controller
 }
 
-// NewAppController links the App to the broker
-func NewAppController(bc extensions.BrokerController, options ...ControllerOption) (*AppController, error) {
+// NewPublisherController links the Publisher to the broker
+func NewPublisherController(bc extensions.BrokerController, options ...ControllerOption) (*PublisherController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -38,10 +38,10 @@ func NewAppController(bc extensions.BrokerController, options ...ControllerOptio
 		option(&controller)
 	}
 
-	return &AppController{controller: controller}, nil
+	return &PublisherController{controller: controller}, nil
 }
 
-func (c AppController) wrapMiddlewares(
+func (c PublisherController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -90,7 +90,7 @@ func (c AppController) wrapMiddlewares(
 	}
 }
 
-func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c PublisherController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -98,19 +98,19 @@ func (c AppController) executeMiddlewares(ctx context.Context, msg *extensions.B
 	return wrapped(ctx, msg)
 }
 
-func addAppContextValues(ctx context.Context, path string) context.Context {
+func addPublisherContextValues(ctx context.Context, path string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "app")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "publisher")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *AppController) Close(ctx context.Context) {
+func (c *PublisherController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 }
 
 // PublishV2Issue97ReferencePayloadArray will publish messages to 'v2.issue97.referencePayloadArray' channel
-func (c *AppController) PublishV2Issue97ReferencePayloadArray(
+func (c *PublisherController) PublishV2Issue97ReferencePayloadArray(
 	ctx context.Context,
 	msg ReferencePayloadArrayMessage,
 ) error {
@@ -118,7 +118,7 @@ func (c *AppController) PublishV2Issue97ReferencePayloadArray(
 	path := "v2.issue97.referencePayloadArray"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addPublisherContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -137,7 +137,7 @@ func (c *AppController) PublishV2Issue97ReferencePayloadArray(
 }
 
 // PublishV2Issue97ReferencePayloadObject will publish messages to 'v2.issue97.referencePayloadObject' channel
-func (c *AppController) PublishV2Issue97ReferencePayloadObject(
+func (c *PublisherController) PublishV2Issue97ReferencePayloadObject(
 	ctx context.Context,
 	msg ReferencePayloadObjectMessage,
 ) error {
@@ -145,7 +145,7 @@ func (c *AppController) PublishV2Issue97ReferencePayloadObject(
 	path := "v2.issue97.referencePayloadObject"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addPublisherContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -164,7 +164,7 @@ func (c *AppController) PublishV2Issue97ReferencePayloadObject(
 }
 
 // PublishV2Issue97ReferencePayloadString will publish messages to 'v2.issue97.referencePayloadString' channel
-func (c *AppController) PublishV2Issue97ReferencePayloadString(
+func (c *PublisherController) PublishV2Issue97ReferencePayloadString(
 	ctx context.Context,
 	msg ReferencePayloadStringMessage,
 ) error {
@@ -172,7 +172,7 @@ func (c *AppController) PublishV2Issue97ReferencePayloadString(
 	path := "v2.issue97.referencePayloadString"
 
 	// Set context
-	ctx = addAppContextValues(ctx, path)
+	ctx = addPublisherContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "publication")
 
 	// Convert to BrokerMessage
@@ -190,8 +190,8 @@ func (c *AppController) PublishV2Issue97ReferencePayloadString(
 	})
 }
 
-// UserSubscriber represents all handlers that are expecting messages for User
-type UserSubscriber interface {
+// SubscriberSubscriber represents all handlers that are expecting messages for Subscriber
+type SubscriberSubscriber interface {
 	// V2Issue97ReferencePayloadArray subscribes to messages placed on the 'v2.issue97.referencePayloadArray' channel
 	V2Issue97ReferencePayloadArray(ctx context.Context, msg ReferencePayloadArrayMessage) error
 
@@ -202,14 +202,14 @@ type UserSubscriber interface {
 	V2Issue97ReferencePayloadString(ctx context.Context, msg ReferencePayloadStringMessage) error
 }
 
-// UserController is the structure that provides publishing capabilities to the
-// developer and and connect the broker with the User
-type UserController struct {
+// SubscriberController is the structure that provides publishing capabilities to the
+// developer and and connect the broker with the Subscriber
+type SubscriberController struct {
 	controller
 }
 
-// NewUserController links the User to the broker
-func NewUserController(bc extensions.BrokerController, options ...ControllerOption) (*UserController, error) {
+// NewSubscriberController links the Subscriber to the broker
+func NewSubscriberController(bc extensions.BrokerController, options ...ControllerOption) (*SubscriberController, error) {
 	// Check if broker controller has been provided
 	if bc == nil {
 		return nil, extensions.ErrNilBrokerController
@@ -229,10 +229,10 @@ func NewUserController(bc extensions.BrokerController, options ...ControllerOpti
 		option(&controller)
 	}
 
-	return &UserController{controller: controller}, nil
+	return &SubscriberController{controller: controller}, nil
 }
 
-func (c UserController) wrapMiddlewares(
+func (c SubscriberController) wrapMiddlewares(
 	middlewares []extensions.Middleware,
 	callback extensions.NextMiddleware,
 ) func(ctx context.Context, msg *extensions.BrokerMessage) error {
@@ -281,7 +281,7 @@ func (c UserController) wrapMiddlewares(
 	}
 }
 
-func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
+func (c SubscriberController) executeMiddlewares(ctx context.Context, msg *extensions.BrokerMessage, callback extensions.NextMiddleware) error {
 	// Wrap middleware to have 'next' function when calling them
 	wrapped := c.wrapMiddlewares(c.middlewares, callback)
 
@@ -289,25 +289,25 @@ func (c UserController) executeMiddlewares(ctx context.Context, msg *extensions.
 	return wrapped(ctx, msg)
 }
 
-func addUserContextValues(ctx context.Context, path string) context.Context {
+func addSubscriberContextValues(ctx context.Context, path string) context.Context {
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsVersion, "1.0.0")
-	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "user")
+	ctx = context.WithValue(ctx, extensions.ContextKeyIsProvider, "subscriber")
 	return context.WithValue(ctx, extensions.ContextKeyIsChannel, path)
 }
 
 // Close will clean up any existing resources on the controller
-func (c *UserController) Close(ctx context.Context) {
+func (c *SubscriberController) Close(ctx context.Context) {
 	// Unsubscribing remaining channels
 	c.UnsubscribeAll(ctx)
 
-	c.logger.Info(ctx, "Closed user controller")
+	c.logger.Info(ctx, "Closed subscriber controller")
 }
 
 // SubscribeAll will subscribe to channels without parameters on which the app is expecting messages.
 // For channels with parameters, they should be subscribed independently.
-func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) error {
+func (c *SubscriberController) SubscribeAll(ctx context.Context, as SubscriberSubscriber) error {
 	if as == nil {
-		return extensions.ErrNilUserSubscriber
+		return extensions.ErrNilSubscriberHandler
 	}
 
 	if err := c.SubscribeV2Issue97ReferencePayloadArray(ctx, as.V2Issue97ReferencePayloadArray); err != nil {
@@ -324,7 +324,7 @@ func (c *UserController) SubscribeAll(ctx context.Context, as UserSubscriber) er
 }
 
 // UnsubscribeAll will unsubscribe all remaining subscribed channels
-func (c *UserController) UnsubscribeAll(ctx context.Context) {
+func (c *SubscriberController) UnsubscribeAll(ctx context.Context) {
 	c.UnsubscribeV2Issue97ReferencePayloadArray(ctx)
 	c.UnsubscribeV2Issue97ReferencePayloadObject(ctx)
 	c.UnsubscribeV2Issue97ReferencePayloadString(ctx)
@@ -333,7 +333,7 @@ func (c *UserController) UnsubscribeAll(ctx context.Context) {
 // SubscribeV2Issue97ReferencePayloadArray will subscribe to new messages from 'v2.issue97.referencePayloadArray' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
+func (c *SubscriberController) SubscribeV2Issue97ReferencePayloadArray(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
 ) error {
@@ -341,7 +341,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 	path := "v2.issue97.referencePayloadArray"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
@@ -382,14 +382,14 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadArray(
 	return nil
 }
 
-func (c *UserController) listenToV2Issue97ReferencePayloadArrayNextMessage(
+func (c *SubscriberController) listenToV2Issue97ReferencePayloadArrayNextMessage(
 	path string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg ReferencePayloadArrayMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = addSubscriberContextValues(msgCtx, path)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -433,7 +433,7 @@ func (c *UserController) listenToV2Issue97ReferencePayloadArrayNextMessage(
 
 // UnsubscribeV2Issue97ReferencePayloadArray will unsubscribe messages from 'v2.issue97.referencePayloadArray' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeV2Issue97ReferencePayloadArray(ctx context.Context) {
+func (c *SubscriberController) UnsubscribeV2Issue97ReferencePayloadArray(ctx context.Context) {
 	// Get channel path
 	path := "v2.issue97.referencePayloadArray"
 
@@ -444,7 +444,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadArray(ctx context.C
 	}
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -458,7 +458,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadArray(ctx context.C
 // SubscribeV2Issue97ReferencePayloadObject will subscribe to new messages from 'v2.issue97.referencePayloadObject' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
+func (c *SubscriberController) SubscribeV2Issue97ReferencePayloadObject(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
 ) error {
@@ -466,7 +466,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 	path := "v2.issue97.referencePayloadObject"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
@@ -507,14 +507,14 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadObject(
 	return nil
 }
 
-func (c *UserController) listenToV2Issue97ReferencePayloadObjectNextMessage(
+func (c *SubscriberController) listenToV2Issue97ReferencePayloadObjectNextMessage(
 	path string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg ReferencePayloadObjectMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = addSubscriberContextValues(msgCtx, path)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -558,7 +558,7 @@ func (c *UserController) listenToV2Issue97ReferencePayloadObjectNextMessage(
 
 // UnsubscribeV2Issue97ReferencePayloadObject will unsubscribe messages from 'v2.issue97.referencePayloadObject' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeV2Issue97ReferencePayloadObject(ctx context.Context) {
+func (c *SubscriberController) UnsubscribeV2Issue97ReferencePayloadObject(ctx context.Context) {
 	// Get channel path
 	path := "v2.issue97.referencePayloadObject"
 
@@ -569,7 +569,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadObject(ctx context.
 	}
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -583,7 +583,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadObject(ctx context.
 // SubscribeV2Issue97ReferencePayloadString will subscribe to new messages from 'v2.issue97.referencePayloadString' channel.
 //
 // Callback function 'fn' will be called each time a new message is received.
-func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
+func (c *SubscriberController) SubscribeV2Issue97ReferencePayloadString(
 	ctx context.Context,
 	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
 ) error {
@@ -591,7 +591,7 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 	path := "v2.issue97.referencePayloadString"
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 	ctx = context.WithValue(ctx, extensions.ContextKeyIsDirection, "reception")
 
 	// Check if there is already a subscription
@@ -632,14 +632,14 @@ func (c *UserController) SubscribeV2Issue97ReferencePayloadString(
 	return nil
 }
 
-func (c *UserController) listenToV2Issue97ReferencePayloadStringNextMessage(
+func (c *SubscriberController) listenToV2Issue97ReferencePayloadStringNextMessage(
 	path string,
 	sub extensions.BrokerChannelSubscription,
 	fn func(ctx context.Context, msg ReferencePayloadStringMessage) error,
 ) (stop bool, err error) {
 	// Create a context for the received response
 	msgCtx, cancel := context.WithCancel(context.Background())
-	msgCtx = addUserContextValues(msgCtx, path)
+	msgCtx = addSubscriberContextValues(msgCtx, path)
 	msgCtx = context.WithValue(msgCtx, extensions.ContextKeyIsDirection, "reception")
 	defer cancel()
 
@@ -683,7 +683,7 @@ func (c *UserController) listenToV2Issue97ReferencePayloadStringNextMessage(
 
 // UnsubscribeV2Issue97ReferencePayloadString will unsubscribe messages from 'v2.issue97.referencePayloadString' channel.
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) UnsubscribeV2Issue97ReferencePayloadString(ctx context.Context) {
+func (c *SubscriberController) UnsubscribeV2Issue97ReferencePayloadString(ctx context.Context) {
 	// Get channel path
 	path := "v2.issue97.referencePayloadString"
 
@@ -694,7 +694,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadString(ctx context.
 	}
 
 	// Set context
-	ctx = addUserContextValues(ctx, path)
+	ctx = addSubscriberContextValues(ctx, path)
 
 	// Stop the subscription
 	sub.Cancel(ctx)
@@ -709,7 +709,7 @@ func (c *UserController) UnsubscribeV2Issue97ReferencePayloadString(ctx context.
 const AsyncAPIVersion = "1.0.0"
 
 // controller is the controller that will be used to communicate with the broker
-// It will be used internally by AppController and UserController
+// It will be used internally by PublisherController and SubscriberController
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController

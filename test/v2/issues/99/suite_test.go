@@ -24,8 +24,8 @@ func TestSuite(t *testing.T) {
 
 type Suite struct {
 	broker      extensions.BrokerController
-	app         *AppController
-	user        *UserController
+	app         *PublisherController
+	user        *SubscriberController
 	interceptor chan extensions.BrokerMessage
 	suite.Suite
 }
@@ -50,12 +50,12 @@ func (suite *Suite) SetupTest() {
 	}
 
 	// Create app
-	app, err := NewAppController(suite.broker, WithMiddlewares(m))
+	app, err := NewPublisherController(suite.broker, WithMiddlewares(m))
 	suite.Require().NoError(err)
 	suite.app = app
 
 	// Create user
-	user, err := NewUserController(suite.broker, WithMiddlewares(middlewares.Intercepter(suite.interceptor), m))
+	user, err := NewSubscriberController(suite.broker, WithMiddlewares(middlewares.Intercepter(suite.interceptor), m))
 	suite.Require().NoError(err)
 	suite.user = user
 }

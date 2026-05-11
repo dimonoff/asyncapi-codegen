@@ -23,7 +23,7 @@ func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) C
 
 	// Get subscription methods count based on publish/subscribe count
 	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
-	if side == generators.SideIsApplication {
+	if side == generators.SideIsPublisher {
 		gen.MethodCount = publishCount
 	} else {
 		gen.MethodCount = subscribeCount
@@ -45,10 +45,10 @@ func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) C
 	}
 
 	// Set generation name
-	if side == generators.SideIsApplication {
-		gen.Prefix = "App"
+	if side == generators.SideIsPublisher {
+		gen.Prefix = "Publisher"
 	} else {
-		gen.Prefix = "User"
+		gen.Prefix = "Subscriber"
 	}
 
 	// Set version
@@ -59,9 +59,9 @@ func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) C
 
 func isSubscribeChannel(side generators.Side, channel *asyncapi.Channel) bool {
 	switch {
-	case side == generators.SideIsApplication && channel.Publish != nil:
+	case side == generators.SideIsPublisher && channel.Publish != nil:
 		return true
-	case side == generators.SideIsUser && channel.Subscribe != nil:
+	case side == generators.SideIsSubscriber && channel.Subscribe != nil:
 		return true
 	default:
 		return false
@@ -70,9 +70,9 @@ func isSubscribeChannel(side generators.Side, channel *asyncapi.Channel) bool {
 
 func isPublishChannel(side generators.Side, channel *asyncapi.Channel) bool {
 	switch {
-	case side == generators.SideIsApplication && channel.Subscribe != nil:
+	case side == generators.SideIsPublisher && channel.Subscribe != nil:
 		return true
-	case side == generators.SideIsUser && channel.Publish != nil:
+	case side == generators.SideIsSubscriber && channel.Publish != nil:
 		return true
 	default:
 		return false
