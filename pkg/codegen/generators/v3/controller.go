@@ -19,14 +19,14 @@ type ControllerGenerator struct {
 func NewControllerGenerator(side generators.Side, spec asyncapi.Specification) ControllerGenerator {
 	var gen ControllerGenerator
 
-	// Generate receive send operations
+	// Generate receive/send operations
 	gen.Operations = NewActionOperations(side, spec)
 
 	// Set generation name
-	if side == generators.SideIsApplication {
-		gen.Prefix = "App"
+	if side == generators.SideIsPublisher {
+		gen.Prefix = "Publisher"
 	} else {
-		gen.Prefix = "User"
+		gen.Prefix = "Subscriber"
 	}
 
 	// Set version
@@ -41,9 +41,9 @@ func shouldControllerRespondToReply(side generators.Side, op *asyncapi.Operation
 	}
 
 	switch {
-	case side == generators.SideIsApplication && op.Action.IsReceive():
+	case side == generators.SideIsPublisher && op.Action.IsReceive():
 		return true
-	case side == generators.SideIsUser && op.Action.IsSend():
+	case side == generators.SideIsSubscriber && op.Action.IsSend():
 		return true
 	default:
 		return false
@@ -52,9 +52,9 @@ func shouldControllerRespondToReply(side generators.Side, op *asyncapi.Operation
 
 func isControllerReceiveOperation(side generators.Side, op *asyncapi.Operation) bool {
 	switch {
-	case side == generators.SideIsApplication && op.Action.IsReceive():
+	case side == generators.SideIsPublisher && op.Action.IsReceive():
 		return true
-	case side == generators.SideIsUser && op.Action.IsSend():
+	case side == generators.SideIsSubscriber && op.Action.IsSend():
 		return true
 	default:
 		return false
@@ -63,9 +63,9 @@ func isControllerReceiveOperation(side generators.Side, op *asyncapi.Operation) 
 
 func isControllerSendOperation(side generators.Side, op *asyncapi.Operation) bool {
 	switch {
-	case side == generators.SideIsApplication && op.Action.IsSend():
+	case side == generators.SideIsPublisher && op.Action.IsSend():
 		return true
-	case side == generators.SideIsUser && op.Action.IsReceive():
+	case side == generators.SideIsSubscriber && op.Action.IsReceive():
 		return true
 	default:
 		return false

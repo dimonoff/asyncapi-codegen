@@ -27,8 +27,8 @@ func TestSuite(t *testing.T) {
 
 type Suite struct {
 	broker extensions.BrokerController
-	app    *AppController
-	user   *UserController
+	app    *PublisherController
+	user   *SubscriberController
 	suite.Suite
 
 	wg sync.WaitGroup
@@ -48,12 +48,12 @@ func (suite *Suite) SetupTest() {
 	}
 
 	// Create app
-	app, err := NewAppController(suite.broker, WithErrorHandler(testErrorHandler))
+	app, err := NewPublisherController(suite.broker, WithErrorHandler(testErrorHandler))
 	suite.Require().NoError(err)
 	suite.app = app
 
 	// Create user
-	user, err := NewUserController(suite.broker, WithErrorHandler(testErrorHandler))
+	user, err := NewSubscriberController(suite.broker, WithErrorHandler(testErrorHandler))
 	suite.Require().NoError(err)
 	suite.user = user
 }

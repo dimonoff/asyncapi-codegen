@@ -103,11 +103,11 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 
 {{if .Operations.ReceiveCount -}}
 // SubscribeToAllChannels will receive messages from channels where channel has
-// no parameter on which the app is expecting messages. For channels with parameters,
+// no parameter on which the controller is expecting messages. For channels with parameters,
 // they should be subscribed independently.
 func (c *{{ .Prefix }}Controller) SubscribeToAllChannels(ctx context.Context, as {{ .Prefix }}Subscriber) error {
     if as == nil {
-        return extensions.ErrNil{{ .Prefix }}Subscriber
+        return extensions.ErrNil{{ .Prefix }}Handler
     }
 
     {{range  $key, $value := .Operations.Receive -}}
@@ -170,7 +170,7 @@ func (c *{{ $.Prefix }}Controller) SubscribeTo{{ namify $value.Follow.Name }}(
     }
     c.logger.Info(ctx, "Subscribed to channel")
 
-    // Asynchronously listen to new messages and pass them to app receiver
+    // Asynchronously listen to new messages and pass them to the receiver
     go func() {
         for {
             // Listen to next message
@@ -273,9 +273,9 @@ func (c *{{ $.Prefix }}Controller) ReplyTo{{ namify $value.Follow.Name }}(ctx co
             chanAddr := *recvMsg.{{referenceToStructAttributePath .Reply.Address.Location}}
         {{- end }}
 
-        return c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, chanAddr, replyMsg)
+        return c.Send{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, chanAddr, replyMsg)
     {{- else }}
-        return c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, replyMsg)
+        return c.Send{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}ReplyTo{{ namify $value.Follow.Name }}(ctx, replyMsg)
     {{- end }}
 }
 
@@ -313,14 +313,14 @@ func (c *{{ $.Prefix }}Controller) UnsubscribeFrom{{ namify $value.Follow.Name }
 
 {{- range  $key, $value := .Operations.Send}}
 
-// Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
+// Send{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel.
 //
 {{- if .Reply}}
 // NOTE: this won't wait for reply, use the normal version to get the reply or do the catching reply manually.
 {{- end}}
 // NOTE: for now, this only support the first message from AsyncAPI list.
 // If you need support for other messages, please raise an issue.
-func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
+func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters }}
         params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
@@ -374,7 +374,7 @@ func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{
 
 {{if .Reply -}}
 
-// Request{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel
+// Request{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }} will send a {{ cutSuffix (opToMsgTypeName $value) "Message" }} message on {{ cutSuffix (opToChannelTypeName $value) "Channel" }} channel
 // and wait for a {{ cutSuffix (opToMsgTypeName $value.ReplyIs) "Message" }} message from {{ cutSuffix (opToChannelTypeName $value.ReplyIs) "Channel" }} channel.
 //
 // If a correlation ID is set in the AsyncAPI, then this will wait for the
@@ -383,7 +383,7 @@ func (c *{{ $.Prefix }}Controller) Send{{ if eq $.Prefix "User" }}To{{else}}As{{
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
 
-func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
+func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(
     ctx context.Context,
     {{- if .Channel.Follow.Parameters}}
     params {{namifyWithoutParam $value.Channel.Follow.Name}}Parameters,
@@ -433,7 +433,7 @@ func (c *{{ $.Prefix }}Controller) Request{{ if eq $.Prefix "User" }}To{{else}}A
     {{- end}}
 
     // Send the message 
-    if err := c.Send{{ if eq $.Prefix "User" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
+    if err := c.Send{{ if eq $.Prefix "Subscriber" }}To{{else}}As{{end}}{{ namify $value.Follow.Name }}(ctx, {{- if .Channel.Follow.Parameters}}params,{{- end}} msg); err != nil {
         c.logger.Error(ctx, "error happened when sending message", extensions.LogInfo{Key: "error", Value: err.Error()})
         return {{channelToMessageTypeName .Reply.Channel}}{}, fmt.Errorf("error happened when sending message: %w", err)
     }

@@ -1,14 +1,15 @@
 package generators
 
-// Side represents the side of the code generation based on asyncapi documentation,
-// i.e in front (user) or behind (application) asyncapi specification.
+// Side represents which role an application plays in the AsyncAPI specification —
+// either the component that publishes messages to a channel, or the component
+// that subscribes to (consumes) messages from a channel.
 type Side string
 
 const (
-	// SideIsApplication is the application side based on asyncapi documentation,
-	// i.e. the side that stand behind of the asyncapi specification.
-	SideIsApplication Side = "app"
-	// SideIsUser is the user side based on asyncapi documentation,
-	// i.e. the side that use the asyncapi specification.
-	SideIsUser Side = "user"
+	// SideIsPublisher represents the component that publishes messages to channels.
+	// It maps to the "application" / send side of the AsyncAPI specification.
+	SideIsPublisher Side = "publisher"
+	// SideIsSubscriber represents the component that subscribes to (receives) messages
+	// from channels. It maps to the "user" / receive side of the AsyncAPI specification.
+	SideIsSubscriber Side = "subscriber"
 )

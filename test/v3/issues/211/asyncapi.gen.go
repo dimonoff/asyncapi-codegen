@@ -68,11 +68,6 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("channel %q: err %v", e.Channel, e.Err)
 }
 
-// Message 'EventSuccessMessageMessageFromEventSuccessChannel' reference another one at '#/components/messages/EventSuccess'.
-// This should be fixed in a future version to allow message override.
-// If you encounter this message, feel free to open an issue on this subject
-// to let know that you need this functionnality.
-
 // EventSuccessMessagePayload is a schema from the AsyncAPI specification required in messages
 type EventSuccessMessagePayload struct {
 	// Description: The timestamp of the event

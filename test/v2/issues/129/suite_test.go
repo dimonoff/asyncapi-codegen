@@ -1,7 +1,7 @@
-//go:generate go run ../../../../cmd/asyncapi-codegen -g types,user -p none -i ./asyncapi.yaml -o ./none/asyncapi.gen.go
-//go:generate go run ../../../../cmd/asyncapi-codegen -g types,user -p snake --convert-keys snake -i ./asyncapi.yaml -o ./snake/asyncapi.gen.go
-//go:generate go run ../../../../cmd/asyncapi-codegen -g types,user -p camel --convert-keys camel -i ./asyncapi.yaml -o ./camel/asyncapi.gen.go
-//go:generate go run ../../../../cmd/asyncapi-codegen -g types,user -p kebab --convert-keys kebab -i ./asyncapi.yaml -o ./kebab/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g types,subscriber -p none -i ./asyncapi.yaml -o ./none/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g types,subscriber -p snake --convert-keys snake -i ./asyncapi.yaml -o ./snake/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g types,subscriber -p camel --convert-keys camel -i ./asyncapi.yaml -o ./camel/asyncapi.gen.go
+//go:generate go run ../../../../cmd/asyncapi-codegen -g types,subscriber -p kebab --convert-keys kebab -i ./asyncapi.yaml -o ./kebab/asyncapi.gen.go
 
 package issue129
 
@@ -48,7 +48,7 @@ func (suite *Suite) TestWithNoneKeyConversion() {
 	defer close(interceptor)
 
 	// Create none user
-	user, err := none.NewUserController(suite.broker, none.WithMiddlewares(middlewares.Intercepter(interceptor)))
+	user, err := none.NewSubscriberController(suite.broker, none.WithMiddlewares(middlewares.Intercepter(interceptor)))
 	suite.Require().NoError(err)
 	defer user.Close(context.Background())
 
@@ -74,7 +74,7 @@ func (suite *Suite) TestWithSnakeKeyConversion() {
 	defer close(interceptor)
 
 	// Create snake user
-	user, err := snake.NewUserController(suite.broker, snake.WithMiddlewares(middlewares.Intercepter(interceptor)))
+	user, err := snake.NewSubscriberController(suite.broker, snake.WithMiddlewares(middlewares.Intercepter(interceptor)))
 	suite.Require().NoError(err)
 	defer user.Close(context.Background())
 
@@ -100,7 +100,7 @@ func (suite *Suite) TestWithKebabKeyConversion() {
 	defer close(interceptor)
 
 	// Create kebab user
-	user, err := kebab.NewUserController(suite.broker, kebab.WithMiddlewares(middlewares.Intercepter(interceptor)))
+	user, err := kebab.NewSubscriberController(suite.broker, kebab.WithMiddlewares(middlewares.Intercepter(interceptor)))
 	suite.Require().NoError(err)
 	defer user.Close(context.Background())
 
@@ -126,7 +126,7 @@ func (suite *Suite) TestWithCamelKeyConversion() {
 	defer close(interceptor)
 
 	// Create camel user
-	user, err := camel.NewUserController(suite.broker, camel.WithMiddlewares(middlewares.Intercepter(interceptor)))
+	user, err := camel.NewSubscriberController(suite.broker, camel.WithMiddlewares(middlewares.Intercepter(interceptor)))
 	suite.Require().NoError(err)
 	defer user.Close(context.Background())
 

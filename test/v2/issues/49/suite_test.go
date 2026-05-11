@@ -22,14 +22,14 @@ func (suite *Suite) TestCorrectPublicationsSubscriptionsAreGenerated() {
 	_ = UserSubscriber.V2Issue49Status
 
 	// Check that the User publisher is generated with correct publications
-	userController := UserController{}
+	userController := SubscriberController{}
 	_ = userController.PublishV2Issue49Chat
 
 	// Check that the User subscriber is generated with correct subscriptions
 	_ = AppSubscriber.V2Issue49Chat
 
 	// Check that the App publisher is generated with correct publications
-	appController := AppController{}
+	appController := PublisherController{}
 	_ = appController.PublishV2Issue49Status
 	_ = appController.PublishV2Issue49Chat
 }

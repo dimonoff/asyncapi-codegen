@@ -14,7 +14,7 @@ import (
 const AsyncAPIVersion = "0.1.0"
 
 // controller is the controller that will be used to communicate with the broker
-// It will be used internally by AppController and UserController
+// It will be used internally by PublisherController and SubscriberController
 type controller struct {
 	// broker is the broker controller that will be used to communicate
 	broker extensions.BrokerController

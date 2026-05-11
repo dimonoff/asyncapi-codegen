@@ -21,7 +21,7 @@ func NewSubscriberGenerator(side generators.Side, spec asyncapi.Specification) S
 
 	// Get subscription methods count based on publish/subscribe count
 	publishCount, subscribeCount := spec.GetPublishSubscribeCount()
-	if side == generators.SideIsApplication {
+	if side == generators.SideIsPublisher {
 		gen.MethodCount = publishCount
 	} else {
 		gen.MethodCount = subscribeCount
@@ -30,19 +30,19 @@ func NewSubscriberGenerator(side generators.Side, spec asyncapi.Specification) S
 	// Get channels based on publish/subscribe
 	gen.Channels = make(map[string]*asyncapi.Channel)
 	for k, v := range spec.Channels {
-		// Channels are reverse on application side
-		if v.Publish != nil && side == generators.SideIsApplication {
+		// The publisher side handles incoming publish operations
+		if v.Publish != nil && side == generators.SideIsPublisher {
 			gen.Channels[k] = v
-		} else if v.Subscribe != nil && side == generators.SideIsUser {
+		} else if v.Subscribe != nil && side == generators.SideIsSubscriber {
 			gen.Channels[k] = v
 		}
 	}
 
 	// Set generation name
-	if side == generators.SideIsApplication {
-		gen.Prefix = "App"
+	if side == generators.SideIsPublisher {
+		gen.Prefix = "Publisher"
 	} else {
-		gen.Prefix = "User"
+		gen.Prefix = "Subscriber"
 	}
 
 	return gen

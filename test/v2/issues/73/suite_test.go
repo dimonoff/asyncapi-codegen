@@ -32,12 +32,12 @@ func TestSuite(t *testing.T) {
 type Suite struct {
 	broker extensions.BrokerController
 	v1     struct {
-		app  *v1.AppController
-		user *v1.UserController
+		app  *v1.PublisherController
+		user *v1.SubscriberController
 	}
 	v2 struct {
-		app  *v2.AppController
-		user *v2.UserController
+		app  *v2.PublisherController
+		user *v2.SubscriberController
 	}
 	interceptor chan extensions.BrokerMessage
 
@@ -59,22 +59,22 @@ func (suite *Suite) SetupTest() {
 	vw := versioning.NewWrapper(suite.broker)
 
 	// Create v1 appV1
-	appV1, err := v1.NewAppController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	appV1, err := v1.NewPublisherController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v1.app = appV1
 
 	// Create v1 userV1
-	userV1, err := v1.NewUserController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	userV1, err := v1.NewSubscriberController(vw, v1.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v1.user = userV1
 
 	// Create v2 app
-	appV2, err := v2.NewAppController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	appV2, err := v2.NewPublisherController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v2.app = appV2
 
 	// Create v2 user
-	userV2, err := v2.NewUserController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
+	userV2, err := v2.NewSubscriberController(vw, v2.WithMiddlewares(middlewares.Intercepter(suite.interceptor)))
 	suite.Require().NoError(err)
 	suite.v2.user = userV2
 }

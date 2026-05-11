@@ -106,7 +106,7 @@ func (c *{{ .Prefix }}Controller) Close(ctx context.Context) {
 // For channels with parameters, they should be subscribed independently.
 func (c *{{ .Prefix }}Controller) SubscribeAll(ctx context.Context, as {{ .Prefix }}Subscriber) error {
     if as == nil {
-        return extensions.ErrNil{{ .Prefix }}Subscriber
+        return extensions.ErrNil{{ .Prefix }}Handler
     }
 
     {{range  $key, $value := .SubscribeChannels -}}
@@ -313,7 +313,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(
 }
 {{end}}
 
-{{if eq .Prefix "User" -}}
+{{if eq .Prefix "Subscriber" -}}
 {{- range  $key, $value := .SubscribeChannels -}}
 {{- if ne $value.Subscribe.Message.CorrelationIDLocation ""}}
 // WaitFor{{operationName $value}} will wait for a specific message by its correlation ID.
@@ -322,7 +322,7 @@ func (c *{{ $.Prefix }}Controller) Publish{{operationName $value}}(
 // It will be called after subscribing to the channel to avoid race condition, and potentially loose the message.
 //
 // A timeout can be set in context to avoid blocking operation, if needed.
-func (c *UserController) WaitFor{{operationName $value}}(
+func (c *SubscriberController) WaitFor{{operationName $value}}(
     ctx context.Context,
     {{- if .Parameters}}
     params {{namifyWithoutParam $key}}Parameters,
@@ -376,7 +376,7 @@ func (c *UserController) WaitFor{{operationName $value}}(
     }
 }
 
-func (c *UserController) waitFor{{operationName $value}}NextMessage(
+func (c *SubscriberController) waitFor{{operationName $value}}NextMessage(
     ctx context.Context,
     path string,
     sub extensions.BrokerChannelSubscription,

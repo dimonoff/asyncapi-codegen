@@ -18,14 +18,14 @@ type SubscriberGenerator struct {
 func NewSubscriberGenerator(side generators.Side, spec asyncapi.Specification) SubscriberGenerator {
 	var gen SubscriberGenerator
 
-	// Generate receive send operations
+	// Generate receive/send operations
 	gen.Operations = NewActionOperations(side, spec)
 
 	// Set generation name
-	if side == generators.SideIsApplication {
-		gen.Prefix = "App"
+	if side == generators.SideIsPublisher {
+		gen.Prefix = "Publisher"
 	} else {
-		gen.Prefix = "User"
+		gen.Prefix = "Subscriber"
 	}
 
 	return gen

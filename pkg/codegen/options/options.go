@@ -2,10 +2,14 @@ package options
 
 // GeneratorOptions are the options to activate some parts of code generation.
 type GeneratorOptions struct {
-	// Application should be true for application code generation to be generated
-	Application bool
-	// User should be true for user code generation to be generated
-	User bool
+	// Publisher should be true for publisher code generation to be generated.
+	// The publisher side sends messages to channels —
+	// it maps to the "application" / send side of the AsyncAPI specification.
+	Publisher bool
+	// Subscriber should be true for subscriber code generation to be generated.
+	// The subscriber side receives messages from channels —
+	// it maps to the "user" / receive side of the AsyncAPI specification.
+	Subscriber bool
 	// Types should be true for type code (or common code) generation to be generated
 	Types bool
 }

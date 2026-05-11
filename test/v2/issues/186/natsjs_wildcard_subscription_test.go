@@ -50,7 +50,7 @@ func TestWildcardSubscription(t *testing.T) {
 type Suite struct {
 	broker extensions.BrokerController
 	nats   *natsio.Conn
-	app    *AppController
+	app    *PublisherController
 	suite.Suite
 }
 
@@ -62,7 +62,7 @@ func newSuite(broker extensions.BrokerController, nats *natsio.Conn) *Suite {
 }
 
 func (suite *Suite) SetupTest() {
-	app, err := NewAppController(suite.broker)
+	app, err := NewPublisherController(suite.broker)
 	suite.Require().NoError(err)
 	suite.app = app
 }
